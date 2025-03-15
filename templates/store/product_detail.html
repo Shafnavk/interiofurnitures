@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+{% load static%}
+{% block content %}
+<style>
+    .product-detail {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .breadcrumb {
+        margin-bottom: 2rem;
+        color: #666;
+    }
+
+    .breadcrumb a {
+        color: #4A635D;
+        text-decoration: none;
+    }
+
+    .breadcrumb span {
+        margin: 0 0.5rem;
+    }
+
+    .product-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        margin-bottom: 3rem;
+    }
+
+    .product-images {
+        position: relative;
+    }
+
+    .zoom-container {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .main-image {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 8px;
+        transition: transform 0.3s ease;
+    }
+
+    .zoom-container:hover .main-image {
+        transform: scale(1.5);
+    }
+
+    .thumbnail-container {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .thumbnail {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: opacity 0.2s, border 0.2s;
+        border: 2px solid transparent;
+    }
+
+    .thumbnail:hover {
+        opacity: 0.8;
+    }
+
+    .thumbnail.active {
+        border-color: #4A635D;
+    }
+
+    .product-info h1 {
+        font-size: 2.5rem;
+        color: #333;
+        margin-bottom: 1rem;
+    }
+
+    .price-container {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .price {
+        font-size: 2rem;
+        color: #4A635D;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .price .currency {
+        font-size: 1.5rem;
+        color: #666;
+    }
+
+    .price .amount {
+        color: #4A635D;
+    }
+
+    .total-price {
+        font-size: 1.8rem;
+        color: #2e7d32;
+        margin-top: 0.5rem;
+        font-weight: 500;
+    }
+
+    .stock-status {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+    }
+
+    .out-of-stock {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+
+    .description {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    .quantity {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .quantity label {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .quantity input {
+        width: 80px;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    .add-to-cart, .view-cart {
+        width: 100%;
+        padding: 1rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .add-to-cart {
+        background-color: #4A635D;
+        color: white;
+    }
+
+    .add-to-cart:hover {
+        background-color: #3b4f4a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(74, 99, 93, 0.2);
+    }
+
+    .view-cart {
+        background-color: #fff;
+        color: #4A635D;
+        border: 2px solid #4A635D;
+    }
+
+    .view-cart:hover {
+        background-color: #4A635D;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(74, 99, 93, 0.2);
+    }
+
+    .add-to-cart:active, .view-cart:active {
+        transform: translateY(0);
+    }
+
+    .add-to-cart i, .view-cart i {
+        font-size: 1.2rem;
+    }
+
+    .product-tabs {
+        margin-top: 4rem;
+    }
+
+    .tab-buttons {
+        display: flex;
+        gap: 1rem;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 2rem;
+    }
+
+    .tab-button {
+        padding: 1rem 2rem;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        font-weight: 500;
+        color: #666;
+    }
+
+    .tab-button.active {
+        color: #4A635D;
+        border-bottom-color: #4A635D;
+    }
+
+    .tab-content {
+        display: none;
+        padding: 1rem 0;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .specifications-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
+    }
+
+    .spec-label {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .spec-value {
+        color: #666;
+    }
+
+    .specifications-content {
+        color: #666;
+        line-height: 1.6;
+        white-space: pre-line;
+    }
+
+    .related-products {
+        margin-top: 4rem;
+        padding-top: 2rem;
+        border-top: 1px solid #eee;
+    }
+
+    .related-products h2 {
+        font-size: 1.8rem;
+        color: #333;
+        margin-bottom: 2rem;
+    }
+
+    .related-products .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        text-align: center;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .product-card a {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .product-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .product-card h3 {
+        font-size: 1.1rem;
+        color: #333;
+        margin: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .product-card p {
+        color: #4A635D;
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin: 0 1rem 1rem;
+    }
+
+    .product-card .btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background-color: #4A635D;
+        color: white;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-bottom: 1rem;
+        transition: background-color 0.2s;
+    }
+
+    .product-card .btn:hover {
+        background-color: #3b4f4a;
+    }
+
+    @media (max-width: 768px) {
+        .product-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .zoom-container {
+            height: auto;
+        }
+
+        .related-products .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+    }
+</style>
+
+<div class="product-detail">
+    <div class="breadcrumb">
+        <a href="{% url 'store' %}">Store</a>
+        <span>/</span>
+        <a href="{{ single_product.category.get_url }}">{{ single_product.category.category_name }}</a>
+        <span>/</span>
+        {{ single_product.product_name }}
+    </div>
+
+    <div class="product-grid">
+        <div class="product-images">
+            <div class="zoom-container">
+                {% if single_product.images.first %}
+                    <img src="{{ single_product.images.first.image.url }}" alt="{{ single_product.product_name }}" class="main-image" id="main-image">
+                {% endif %}
+            </div>
+            <div class="thumbnail-container">
+                {% for image in single_product.images.all %}
+                    <img src="{{ image.image.url }}" 
+                         alt="Product thumbnail" 
+                         class="thumbnail {% if forloop.first %}active{% endif %}"
+                         onclick="changeMainImage(this)">
+                {% endfor %}
+            </div>
+        </div>
+        <div class="product-info">
+            <h1>{{ single_product.product_name }}</h1>
+            <span class="float-right">4.5/5 <i class="fa fa-star text-warning"></i></span>
+        
+            {% if single_product.stock > 0 %}
+                <div class="stock-status">In Stock</div>
+            {% else %}
+                <div class="stock-status out-of-stock">Out of Stock</div>
+            {% endif %}
+        
+            <form method="POST" action="{% url 'add_cart' single_product.id %}">
+                {% csrf_token %}
+                <div class="quantity">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" 
+                           id="quantity" 
+                           name="quantity" 
+                           value="1" 
+                           min="1" 
+                           max="{% if single_product.stock > 5 %}5{% else %}{{ single_product.stock }}{% endif %}"
+                           onchange="updateTotalPrice(this.value)">
+                </div>
+
+                <div class="price-container">
+                    <div id="base-price" class="price">
+                        <span class="currency">₹</span>
+                        <span class="amount">{{ single_product.price }}</span>
+                    </div>
+                    <div id="total-price" class="total-price"></div>
+                </div>
+
+                {% if single_product.stock > 0 %}
+                    {% if in_cart %}
+                        <a href="{% url 'cart' %}" class="view-cart">
+                            <i class="fa fa-shopping-cart"></i>
+                            View Cart
+                        </a>
+                    {% else %}
+                        <button type="submit" class="add-to-cart">
+                            <i class="fa fa-shopping-cart"></i>
+                            Add to Cart
+                        </button>
+                    {% endif %}
+                {% endif %}
+            </form>
+
+            <div class="product-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="openTab(event, 'description')">Description</button>
+                    <button class="tab-button" onclick="openTab(event, 'specifications')">Specifications</button>
+                </div>
+
+                <div id="description" class="tab-content active">
+                    <p class="description">{{ single_product.description }}</p>
+                </div>
+
+                <div id="specifications" class="tab-content">
+                    <div class="specifications-content">
+                        {{ single_product.specifications|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if related_products %}
+    <div class="related-products">
+        <h2>Related Products</h2>
+        <div class="product-grid">
+            {% for product in related_products %}
+            <div class="product-card">
+                <a href="{{ product.get_url }}">
+                    {% if product.images.first %}
+                    <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}">
+                    {% else %}
+                    <p>No image available</p>
+                    {% endif %}
+                    <h3>{{ product.product_name }}</h3>
+                    <span class="float-right">4.5/5 <i class="fa fa-star text-warning"></i></span>
+                    <p>Rs. {{ product.price }}</p>
+                    <a href="{{ product.get_url }}" class="btn">View Details</a>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function changeMainImage(element) {
+    // Update main image
+    document.getElementById('main-image').src = element.src;
+    
+    // Update active thumbnail
+    const thumbnails = document.querySelectorAll('.thumbnail');
+    thumbnails.forEach(thumb => thumb.classList.remove('active'));
+    element.classList.add('active');
+}
+
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+
+    tablinks = document.getElementsByClassName("tab-button");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+
+function updateTotalPrice(quantity) {
+    const basePrice = "{{ single_product.price }}";
+    const total = parseFloat(basePrice) * parseInt(quantity);
+    const basePriceElement = document.getElementById('base-price');
+    const totalPriceElement = document.getElementById('total-price');
+    
+    if (parseInt(quantity) > 1) {
+        basePriceElement.style.display = 'none';
+        totalPriceElement.innerHTML = `<span class="currency">₹</span><span class="amount">${total}</span>`;
+        totalPriceElement.style.display = 'flex';
+        totalPriceElement.style.alignItems = 'center';
+        totalPriceElement.style.justifyContent = 'center';
+        totalPriceElement.style.gap = '0.5rem';
+    } else {
+        basePriceElement.style.display = 'flex';
+        totalPriceElement.style.display = 'none';
+    }
+}
+
+// Initialize price display on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateTotalPrice(1);
+});
+</script>
+{% endblock %}

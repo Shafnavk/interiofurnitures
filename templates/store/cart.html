@@ -1,0 +1,493 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    .cart-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .cart-layout {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    .cart-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #eee;
+    }
+
+    .cart-header h1 {
+        font-size: 2rem;
+        color: #333;
+        margin: 0;
+    }
+
+    .cart-items {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .cart-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .cart-table th {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #eee;
+    }
+
+    .cart-table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #eee;
+    }
+
+    .product-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .product-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    .product-details h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #333;
+    }
+
+    .product-price {
+        color: #4A635D;
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .quantity-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 1.2rem;
+        color: #666;
+    }
+
+    .quantity-btn:hover {
+        background: #f8f9fa;
+        border-color: #4A635D;
+        color: #4A635D;
+    }
+
+    .quantity-input {
+        width: 50px;
+        height: 32px;
+        text-align: center;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    .remove-btn {
+        color: #dc3545;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: color 0.2s;
+    }
+
+    .remove-btn:hover {
+        color: #c82333;
+    }
+
+    .cart-summary {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        border: 1px solid #eee;
+        position: sticky;
+        top: 2rem;
+    }
+
+    .cart-summary h2 {
+        font-size: 1.5rem;
+        color: #333;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.2rem;
+        color: #666;
+        font-size: 1.1rem;
+    }
+
+    .summary-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .summary-row.total {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #333;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #f0f0f0;
+        background: #f8f9fa;
+        padding: 1.2rem;
+        border-radius: 8px;
+        margin: 1.5rem -1.2rem -1.2rem -1.2rem;
+    }
+
+    .button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-top: 1.5rem;
+    }
+
+    .checkout-btn, .continue-shopping-btn {
+        width: 100%;
+        padding: 0.8rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        text-align: center;
+        text-decoration: none;
+    }
+
+    .checkout-btn {
+        background: #4A635D;
+        color: white;
+    }
+
+    .checkout-btn:hover {
+        background: #3b4f4a;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(74, 99, 93, 0.2);
+    }
+
+    .continue-shopping-btn {
+        background: #f8f9fa;
+        color: #4A635D;
+        border: 1px solid #4A635D;
+    }
+
+    .continue-shopping-btn:hover {
+        background: #4A635D;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(74, 99, 93, 0.2);
+    }
+
+    .checkout-btn:active, .continue-shopping-btn:active {
+        transform: translateY(0);
+    }
+
+    .empty-cart {
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-cart img {
+        width: 200px;
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-cart h2 {
+        color: #333;
+        margin-bottom: 1rem;
+    }
+
+    .empty-cart p {
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 992px) {
+        .cart-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .cart-summary {
+            position: static;
+        }
+    }
+</style>
+
+<div class="cart-container">
+    <div class="cart-header">
+        <h1>Shopping Cart</h1>
+    </div>
+
+    {% if cart_items %}
+        <div class="cart-layout">
+            <div class="cart-items">
+                <table class="cart-table">
+          <thead>
+            <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Total</th>
+                            <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cart_item in cart_items %}
+            <tr>
+                                <td>
+                                    <div class="product-info">
+                                        <img src="{{ cart_item.product.images.first.image.url }}" alt="{{ cart_item.product.product_name }}" class="product-image">
+                                        <div class="product-details">
+                                            <h3>{{ cart_item.product.product_name }}</h3>
+                  </div>
+                </div>
+              </td>
+                                <td>
+                                    <div class="product-price">₹{{ cart_item.product.price }}</div>
+                                </td>
+                                <td>
+                                    <div class="quantity-controls">
+                                        <form method="post" action="{% url 'update_quantity' cart_item.id 'decrease' %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="quantity-btn">-</button>
+                                        </form>
+                                        <form method="post" action="{% url 'update_quantity' cart_item.id 'set' %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <input type="number" 
+                                                name="quantity" 
+                                                class="quantity-input" 
+                                                value="{{ cart_item.quantity }}" 
+                                                min="1" 
+                                                max="{{ cart_item.get_max_allowed_quantity }}" 
+                                                onchange="this.form.submit()"
+                                                title="Maximum {{ cart_item.get_max_allowed_quantity }} items allowed">
+                                        </form>
+                                        <form method="post" action="{% url 'update_quantity' cart_item.id 'increase' %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="quantity-btn">+</button>
+                                        </form>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="product-price">₹{{ cart_item.sub_total }}</div>
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'remove_cart_item' cart_item.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="remove-btn" onclick="return confirm('Are you sure you want to remove this item?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+  </div>
+
+            <div class="cart-summary">
+                <h2>Order Summary</h2>
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>₹{{ total }}</span>
+        </div>
+                <div class="summary-row">
+                    <span>Tax (2%)</span>
+                    <span>₹{{ tax }}</span>
+      </div>
+                <div class="summary-row total">
+                    <span>Grand Total</span>
+                    <span>₹{{ grand_total }}</span>
+      </div>
+                <div class="button-group">
+                    <a href="{% url 'store' %}" class="continue-shopping-btn">Continue Shopping</a>
+                    {% if cart_items %}
+                        {% if request.user.is_authenticated %}
+                            <a href="{% url 'checkout' %}" class="checkout-btn">Proceed to Checkout</a>
+                        {% else %}
+                            <a href="{% url 'login' %}?next={% url 'checkout' %}" class="checkout-btn">Login to Checkout</a>
+                        {% endif %}
+                    {% endif %}
+    </div>
+            </div>
+          </div>
+    {% else %}
+        <div class="empty-cart">
+            <img src="{% static 'images/empty-cart.png' %}" alt="Empty Cart">
+            <h2>Your cart is empty</h2>
+            <p>Looks like you haven't added any items to your cart yet.</p>
+            <a href="{% url 'store' %}" class="continue-shopping-btn">Continue Shopping</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Simple utility to show messages
+function showMessage(message, type = 'success') {
+    const alertsContainer = document.querySelector('.alerts-container') || 
+                            document.createElement('div');
+    
+    if (!document.querySelector('.alerts-container')) {
+        alertsContainer.className = 'alerts-container';
+        alertsContainer.style.position = 'fixed';
+        alertsContainer.style.top = '20px';
+        alertsContainer.style.right = '20px';
+        alertsContainer.style.zIndex = '1000';
+        document.body.appendChild(alertsContainer);
+    }
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    alertsContainer.appendChild(alert);
+    setTimeout(() => alert.remove(), 5000);
+}
+
+// Get CSRF token
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// Update quantity
+function updateQuantity(cartItemId, action, value = null) {
+    let url = `/cart/update_quantity/${cartItemId}/${action}/`;
+    if (value) {
+        url += `?value=${value}`;
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the quantity input
+            document.querySelector(`tr[data-cart-item="${cartItemId}"] .quantity-input`).value = data.quantity;
+            
+            // Update the item total
+            document.querySelector(`tr[data-cart-item="${cartItemId}"] .product-price:last-child`).textContent = `₹${data.sub_total}`;
+            
+            // Update cart totals
+            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `₹${data.total}`;
+            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `₹${data.tax}`;
+            document.querySelector('.summary-row.total span:last-child').textContent = `₹${data.grand_total}`;
+            
+            showMessage('Quantity updated successfully');
+        } else {
+            showMessage(data.message || 'Error updating quantity', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error updating quantity', 'danger');
+    });
+}
+
+// Set up event handlers for remove item forms
+document.addEventListener('DOMContentLoaded', function() {
+    const removeForms = document.querySelectorAll('.remove-item-form');
+    
+    removeForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (confirm('Are you sure you want to remove this item from your cart?')) {
+                const formAction = this.getAttribute('action');
+                
+                fetch(formAction, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Get the cart item row
+                        const cartItemRow = this.closest('tr');
+                        cartItemRow.style.transition = 'all 0.3s ease';
+                        cartItemRow.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            cartItemRow.remove();
+                            
+                            // Update totals
+                            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `₹${data.total}`;
+                            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `₹${data.tax}`;
+                            document.querySelector('.summary-row.total span:last-child').textContent = `₹${data.grand_total}`;
+                            
+                            // Check if cart is empty
+                            if (document.querySelector('.cart-table tbody').children.length === 0) {
+                                location.reload(); // Reload to show empty cart message
+                            }
+                            
+                            showMessage(data.message || 'Item removed successfully');
+                        }, 300);
+                    } else {
+                        showMessage(data.message || 'Error removing item', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('Error removing item', 'danger');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

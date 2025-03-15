@@ -1,0 +1,246 @@
+
+{% extends 'base.html' %}
+{% load static %}
+{% load socialaccount %}
+{% include 'includes/alerts.html' %}
+{% block content %}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    
+                    <h2 class="text-center mb-4">Create an Account</h2>
+
+                    <form action="{% url 'register' %}" method="POST" id="registrationForm" novalidate>
+                        {% csrf_token %}
+
+                        <!-- First Name -->
+                        <div class="form-group mb-3">
+                            <label for="first_name" class="form-label">First Name <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                   id="first_name"
+                                   name="first_name"
+                                   value="{{ form.first_name.value|default:'' }}"
+                                   required>
+                            {% if form.first_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.first_name.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="form-group mb-3">
+                            <label for="last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                   id="last_name"
+                                   name="last_name"
+                                   value="{{ form.last_name.value|default:'' }}"
+                                   required>
+                            {% if form.last_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.last_name.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email -->
+                        <div class="form-group mb-3">
+                            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" 
+                                   class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                                   id="email"
+                                   name="email"
+                                   value="{{ form.email.value|default:'' }}"
+                                   required>
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.email.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Password -->
+                        <div class="form-group mb-3">
+                            <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                                       id="password"
+                                       name="password"
+                                       required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.password.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="form-group mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       class="form-control {% if form.confirm_password.errors %}is-invalid{% endif %}"
+                                       id="confirm_password"
+                                       name="confirm_password"
+                                       required>
+                                <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.confirm_password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.confirm_password.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Password Requirements -->
+                        <div class="password-requirements mb-3 small">
+                            <p class="text-muted mb-2">Password must contain:</p>
+                            <ul class="list-unstyled">
+                                <li id="length-check"><i class="fas fa-times-circle text-danger"></i> At least 8 characters</li>
+                                <li id="uppercase-check"><i class="fas fa-times-circle text-danger"></i> One uppercase letter</li>
+                                <li id="lowercase-check"><i class="fas fa-times-circle text-danger"></i> One lowercase letter</li>
+                                <li id="number-check"><i class="fas fa-times-circle text-danger"></i> One number</li>
+                                <li id="special-check"><i class="fas fa-times-circle text-danger"></i> One special character</li>
+                            </ul>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Account</button>
+                        </div>
+
+                        <!-- Login Link -->
+                        <div class="text-center mt-3">
+                            <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Error Message Styling */
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.alert {
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.is-invalid {
+    border-color: #dc3545;
+}
+
+/* Password Requirements Styling */
+.password-requirements li {
+    margin-bottom: 0.5rem;
+}
+
+.password-requirements i {
+    margin-right: 0.5rem;
+}
+
+/* Form Styling */
+.form-label {
+    font-weight: 500;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.btn-primary {
+    padding: 0.75rem;
+}
+
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registrationForm');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    // Password visibility toggles
+    ['togglePassword', 'toggleConfirmPassword'].forEach(id => {
+        document.getElementById(id).addEventListener('click', function() {
+            const input = this.previousElementSibling;
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('fa-eye');
+            this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+    });
+
+    // Password validation
+    function validatePassword() {
+        const value = password.value;
+        const requirements = {
+            'length-check': value.length >= 8,
+            'uppercase-check': /[A-Z]/.test(value),
+            'lowercase-check': /[a-z]/.test(value),
+            'number-check': /[0-9]/.test(value),
+            'special-check': /[!@#$%^&*(),.?":{}|<>]/.test(value)
+        };
+
+        Object.entries(requirements).forEach(([id, valid]) => {
+            const element = document.getElementById(id);
+            const icon = element.querySelector('i');
+            icon.className = `fas fa-${valid ? 'check' : 'times'}-circle ${valid ? 'text-success' : 'text-danger'}`;
+        });
+
+        return Object.values(requirements).every(Boolean);
+    }
+
+    // Real-time password validation
+    password.addEventListener('input', validatePassword);
+    
+    // Password match validation
+    confirmPassword.addEventListener('input', function() {
+        if (password.value !== this.value) {
+            this.setCustomValidity("Passwords don't match");
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Form submission
+    form.addEventListener('submit', function(event) {
+        if (!validatePassword()) {
+            event.preventDefault();
+            password.setCustomValidity('Password does not meet all requirements');
+        } else {
+            password.setCustomValidity('');
+        }
+    });
+  
+});
+</script>
+{% endblock %}
+

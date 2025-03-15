@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'my_orders' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-shopping-bag me-2"></i> My Orders
+                    </a>
+                    <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-edit me-2"></i> Edit Profile
+                    </a>
+                    <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-key me-2"></i> Change Password
+                    </a>
+                    <a href="{% url 'logout' %}" class="list-group-item list-group-item-action text-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Order #{{ order.order_number }}</h5>
+                        <span class="badge {% if order.status == 'New' %}bg-info{% elif order.status == 'Accepted' %}bg-primary{% elif order.status == 'Completed' %}bg-success{% elif order.status == 'Cancelled' %}bg-danger{% endif %}">
+                            {{ order.status }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Shipping Address</h6>
+                            <p class="mb-0">{{ order.full_name }}</p>
+                            <p class="mb-0">{{ order.full_address }}</p>
+                            <p class="mb-0">{{ order.city }}, {{ order.state }}</p>
+                            <p class="mb-0">{{ order.country }} - {{ order.pincode }}</p>
+                            <p class="mb-0">Email: {{ order.email }}</p>
+                            <p class="mb-0">Phone: {{ order.phone }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Order Information</h6>
+                            <p class="mb-0"><strong>Order Date:</strong> {{ order.created_at|date:"d M Y" }}</p>
+                            <p class="mb-0"><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+                            {% if order.order_note %}
+                            <p class="mb-0"><strong>Order Note:</strong> {{ order.order_note }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h6>Order Items</h6>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in ordered_products %}
+                                <tr>
+                                    <td>{{ item.product.product_name }}</td>
+                                    <td>Rs. {{ item.product_price }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>Rs. {{ item.product_price|multiply:item.quantity }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td>Rs. {{ order.order_total|subtract:order.tax }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Tax (2%):</strong></td>
+                                    <td>Rs. {{ order.tax }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
+                                    <td><strong>Rs. {{ order.order_total }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <a href="" class="btn btn-secondary">Track Order</a>
+                        {% if order.status == 'New' %}
+                        <a href="{% url 'cancel_order' order.id %}" class="btn btn-danger" 
+                           onclick="return confirm('Are you sure you want to cancel this order?')">Cancel Order</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

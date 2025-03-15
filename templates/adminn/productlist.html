@@ -1,0 +1,270 @@
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block title %}Product List{% endblock %}
+
+{% block content %}
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.alert-info {
+    background-color: #acc7be;
+    color: #0c5460;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 24px;
+    border: 1px solid white;
+}
+
+.table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.head {
+    background-color: #acc7be;
+    color: #0c5460;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 24px;
+    border: 1px solid white;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dee2e6;
+    color: #212529;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+    background-color: black;
+    color: white;
+    min-width: 80px;
+    text-align: center;
+    display: inline-block;
+}
+
+.btn1 {
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+    background-color: black;
+    color: white;
+    min-width: 100px;
+    min-height: 50px;
+    text-align: center;
+    display: inline-block;
+    padding: 8px 16px;
+}
+
+.btn:hover {
+    background-color: #c82333;
+}
+
+.status-active {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.status-inactive {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .table-container {
+        overflow-x: auto;
+    }
+    
+    .table th, .table td {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+}
+</style>
+
+<script>
+function deleteProductImage(imageId) {
+    if (confirm('Are you sure you want to delete this image?')) {
+        fetch(`/adminn/delete-product-image/${imageId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the image element from the DOM
+                const imageElement = document.querySelector(`[data-image-id="${imageId}"]`);
+                if (imageElement) {
+                    imageElement.remove();
+                }
+                // Show success message
+                alert('Image deleted successfully');
+            } else {
+                alert('Failed to delete image');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the image');
+        });
+    }
+}
+</script>
+
+<div class="container mt-5 ">
+    
+    <h2 class="head">PRODUCTS</h2>
+    <div class="text-end mb-3">
+        <a href="{% url 'adminn:addproduct' %}" class="btn btn-primary mb-3">Add Product</a>
+    </div>
+    {% include 'includes/alerts.html' %}
+
+    <!-- Active Products -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Active Products</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered">
+                    <thead class="">
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Images</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>{{ product.product_name }}</td>
+                            <td>{{ product.description }}</td>
+                            <td>₹{{ product.price }}</td>
+                            <td>{{ product.stock }}</td>
+                            <td>
+                                {% for image in product.images.all %}
+                                    <div class="image-container" style="display: inline-block; margin-right: 10px;">
+                                        <img src="{{ image.image.url }}" 
+                                             alt="{{ product.product_name }}" 
+                                             class="img-thumbnail" 
+                                             style="max-width: 100px;"
+                                             data-image-id="{{ image.id }}">
+                                        
+                                    </div>
+                                {% empty %}
+                                    <span class="text-muted">No images</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'adminn:editproduct' product.id %}" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{% url 'adminn:deleteproduct' product.id %}" class="btn btn-sm btn-warning" onclick="return confirm('Are you sure you want to unlist this product?')">Unlist</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No active products found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deleted Products -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Trash</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Deleted At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in deleted_products %}
+                        <tr>
+                            <td>{{ product.product_name }}</td>
+                            <td>{{ product.category.category_name }}</td>
+                            <td>₹{{ product.price }}</td>
+                            <td>{{ product.deleted_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'adminn:restore_product' product.id %}" class="btn btn-sm btn-success" onclick="return confirm('Are you sure you want to list this product?')">Restore</a>
+                                <a href="{% url 'adminn:permanent_delete_product' product.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to permanently delete this product? This action cannot be undone.')">Delete Permanently</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No deleted products found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

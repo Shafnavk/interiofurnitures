@@ -1,0 +1,22 @@
+<div class="user-sidebar">
+    <div class="sidebar-menu">
+        <a href="{% url 'dashboard' %}" class="sidebar-item {% if active_tab == 'profile' %}active{% endif %}">
+            <i class="fas fa-user"></i> My Profile
+        </a>
+        <a href="#" class="sidebar-item {% if active_tab == 'wallet' %}active{% endif %}">
+            <i class="fas fa-wallet"></i> My Wallet
+        </a>
+        <a href="#" class="sidebar-item {% if active_tab == 'orders' %}active{% endif %}">
+            <i class="fas fa-shopping-cart"></i> My Orders
+        </a>
+        <a href="#" class="sidebar-item {% if active_tab == 'edit_profile' %}active{% endif %}">
+            <i class="fas fa-heart"></i> Edit Profile
+        </a>
+        <a href="#" class="sidebar-item {% if active_tab == 'change_password' %}active{% endif %}">
+            <i class="fas fa-lock"></i> Change Password
+        </a>
+        <a href="{% url 'logout' %}" class="sidebar-item logout-item">
+            <i class="fas fa-sign-out-alt"></i> Log Out
+        </a>
+    </div>
+</div>

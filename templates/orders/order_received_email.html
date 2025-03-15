@@ -1,0 +1,22 @@
+Subject: Order Confirmation - {{ order.order_number }}
+
+Hello {{ user.first_name }},
+
+Thank you for your order! Your order has been received and is being processed.
+
+Order Details:
+- Order Number: {{ order.order_number }}
+- Order Date: {{ order.created_at }}
+- Payment Method: {{ order.payment_method }}
+- Order Total: Rs.{{ order.order_total }}
+
+Shipping Information:
+- Name: {{ order.full_name }}
+- Address: {{ order.address_line_1 }}
+
+If you have any questions, feel free to contact our support team.
+
+Thank you for shopping with us!
+
+Best regards,  
+Interio furnitures

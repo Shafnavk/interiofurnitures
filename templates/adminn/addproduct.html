@@ -1,0 +1,393 @@
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block title %}CATEGORIES{% endblock %}
+
+{% block content %}
+<style>
+    * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        nav {
+            background-color: #445D54;
+            padding: 1rem 2rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .header {
+            background-color: #C5D5D0;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2C3E38;
+            font-size: 2rem;
+        }
+
+        .add-product {
+            text-align: right;
+            margin-bottom: 2rem;
+        }
+
+        .add-product-btn {
+            background-color: #445D54;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+
+        .product-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #445D54;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input {
+            width: auto;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: #445D54;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #5A7A72;
+            color: white;
+        }
+
+        table {
+            width: 50%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 0px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f8f8;
+            color: #445D54;
+            font-weight: 600;
+        }
+
+        .edit-btn {
+            background-color: #445D54;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+
+    .image-preview-container {
+        margin-top: 10px;
+        position: relative;
+        max-width: 500px;
+    }
+
+    .preview-image {
+        max-width: 100%;
+        display: none;
+    }
+
+    .cropper-container {
+        margin: 10px 0;
+    }
+
+    .crop-controls {
+        margin-top: 10px;
+        display: none;
+    }
+
+    .image-status {
+        color: #445D54;
+        margin-top: 5px;
+        display: none;
+    }
+</style>
+
+<div class="container">
+    <div class="header">
+        <h1>ADD PRODUCTS</h1>
+    </div>
+
+    <div class="product-form">
+        <form action="" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.product_name.id_for_label }}">Product Name</label>
+                {{ form.product_name }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.specifications.id_for_label }}">Specifications</label>
+                {{ form.specifications }}
+                <small class="text-muted">Enter product specifications like dimensions, materials, etc.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.price.id_for_label }}">Price</label>
+                {{ form.price }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.stock.id_for_label }}">Stock</label>
+                {{ form.stock }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.category.id_for_label }}">Category</label>
+                {{ form.category }}
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    {{ form.is_available }}
+                    <label for="{{ form.is_available.id_for_label }}">Is Available</label>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Add images</label>
+                <div class="col-sm-10" id="image-input-container">
+                    <div class="image-upload-group">
+                        <input type="file" class="form-control image-input" accept="image/*" onchange="previewImage(this)">
+                        <input type="hidden" name="cropped_images[]" class="cropped-data">
+                        <div class="image-preview-container">
+                            <img class="preview-image">
+                            <div class="crop-controls">
+                                <button type="button" class="btn btn-primary crop-btn" onclick="cropImage(this)">Crop Image</button>
+                                <button type="button" class="btn btn-secondary remove-btn" onclick="removeImageGroup(this)">Remove</button>
+                            </div>
+                            <div class="image-status">Image cropped successfully ✓</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addImageInput()">Add Image</button>
+            <button type="submit" class="btn btn-success mb-3">Save</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Cropper.js library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+
+
+<script>
+    let croppers = {};
+    
+    function previewImage(input) {
+        const container = input.closest('.image-upload-group');
+        const preview = container.querySelector('.preview-image');
+        const cropControls = container.querySelector('.crop-controls');
+        const imageStatus = container.querySelector('.image-status');
+    
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                cropControls.style.display = 'block';
+                imageStatus.style.display = 'none';
+              
+                if (croppers[input.id]) {
+                    croppers[input.id].destroy();
+                }
+    
+                const cropper = new Cropper(preview, {
+                    aspectRatio: 1,
+                    viewMode: 2,
+                });
+    
+                croppers[input.id] = cropper;
+            };
+    
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    function cropImage(button) {
+        const container = button.closest('.image-upload-group');
+        const input = container.querySelector('.image-input');
+        const preview = container.querySelector('.preview-image');
+        const croppedDataInput = container.querySelector('.cropped-data');
+        const imageStatus = container.querySelector('.image-status');
+        
+        const cropper = croppers[input.id];
+        
+        if (cropper) {
+            // Get cropped canvas
+            const canvas = cropper.getCroppedCanvas();
+            
+            // Convert canvas to blob
+            canvas.toBlob(function(blob) {
+                // Create a new file from blob
+                const croppedFile = new File([blob], 'cropped_image.jpg', { type: 'image/jpeg' });
+                
+                // Create a container for the file data
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(croppedFile);
+                
+                // Update the file input with cropped image
+                input.files = dataTransfer.files;
+                
+                // Store cropped data
+                croppedDataInput.value = JSON.stringify(cropper.getData());
+                
+                // Hide preview and show success message
+                preview.style.display = 'none';
+                cropper.destroy();
+                croppers[input.id] = null;
+                imageStatus.style.display = 'block';
+                button.closest('.crop-controls').style.display = 'none';
+            }, 'image/jpeg');
+        }
+    }
+    
+    function addImageInput() {
+        const container = document.getElementById('image-input-container');
+        const newGroup = document.createElement('div');
+        newGroup.className = 'image-upload-group mt-3';
+        
+        const inputId = 'image-input-' + Date.now();
+        
+        newGroup.innerHTML = `
+            <input type="file" class="form-control image-input" id="${inputId}" accept="image/*" onchange="previewImage(this)">
+            <input type="hidden" name="cropped_images[]" class="cropped-data">
+            <div class="image-preview-container">
+                <img class="preview-image">
+                <div class="crop-controls">
+                    <button type="button" class="btn btn-primary crop-btn" onclick="cropImage(this)">Crop Image</button>
+                    <button type="button" class="btn btn-secondary remove-btn" onclick="removeImageGroup(this)">Remove</button>
+                </div>
+                <div class="image-status">Image cropped successfully ✓</div>
+            </div>
+        `;
+        
+        container.appendChild(newGroup);
+    }
+    
+    function removeImageGroup(button) {
+        const group = button.closest('.image-upload-group');
+        const input = group.querySelector('.image-input');
+        
+        if (croppers[input.id]) {
+            croppers[input.id].destroy();
+            delete croppers[input.id];
+        }
+        
+        group.remove();
+    }
+    
+    // Handle form submission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Add cropped image data to form
+        document.querySelectorAll('.image-upload-group').forEach((group) => {
+            const input = group.querySelector('.image-input');
+            if (input.files.length > 0) {
+                formData.append('images', input.files[0]);
+            }
+        });
+        
+        // Submit the form
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.ok) {
+                window.location.href = "{% url 'adminn:productlist' %}";
+            }
+        });
+    });
+    </script>
+    {% endblock %}

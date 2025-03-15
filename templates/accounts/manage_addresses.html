@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .dashboard-container {
+        background-color: #f8f9fa;
+        padding: 30px 0;
+        min-height: 100vh;
+    }
+    .sidebar {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .sidebar .card-header {
+        background: linear-gradient(135deg, #343a40 0%, #212529 100%);
+        color: white;
+        border-radius: 10px 10px 0 0;
+        padding: 15px;
+    }
+    .sidebar .list-group-item {
+        border: none;
+        padding: 12px 20px;
+        transition: all 0.3s ease;
+    }
+    .sidebar .list-group-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+    .sidebar .list-group-item.active {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border-color: #007bff;
+        color: white;
+    }
+    .main-content {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .main-content .card-header {
+        background: linear-gradient(135deg, #343a40 0%, #212529 100%);
+        color: white;
+        border-radius: 10px 10px 0 0;
+        padding: 20px;
+        border-bottom: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .main-content .card-header h5 {
+        margin: 0;
+        font-size: 18px;
+    }
+    .main-content .card-body {
+        padding: 30px;
+    }
+    .address-card {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    .address-card:hover {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .address-card h6 {
+        color: #343a40;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    .address-card p {
+        color: #6c757d;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+    .address-actions {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+    }
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+    .btn-outline-primary {
+        border-color: #007bff;
+        color: #007bff;
+    }
+    .btn-outline-danger {
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    .default-badge {
+        background: #28a745;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-left: 10px;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+    }
+    .empty-state i {
+        font-size: 48px;
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
+    .empty-state p {
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
+    .modal-content {
+        border-radius: 10px;
+    }
+    .modal-header {
+        background: linear-gradient(135deg, #343a40 0%, #212529 100%);
+        color: white;
+        border-radius: 10px 10px 0 0;
+    }
+    .modal-body {
+        padding: 25px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-control {
+        height: 45px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
+    }
+</style>
+
+<div class="dashboard-container">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 mb-4">
+                <div class="sidebar">
+                    
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        </a>
+                        <a href="{% url 'my_orders' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-shopping-bag me-2"></i> My Orders
+                        </a>
+                        <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-user-edit me-2"></i> Edit Profile
+                        </a>
+                        <a href="{% url 'manage_addresses' %}" class="list-group-item list-group-item-action active">
+                            <i class="fas fa-map-marker-alt me-2"></i>My Address
+                        </a>
+                        <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-key me-2"></i> Change Password
+                        </a>
+                        <a href="{% url 'logout' %}" class="list-group-item list-group-item-action text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9">
+                <div class="main-content">
+                    <div class="card-header">
+                        
+                        <h5 class="mb-0">My Address</h5>
+                        <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                            <i class="fas fa-plus me-2"></i>Add New Address
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        
+
+                        {% if addresses %}
+                            {% for address in addresses %}
+                            <div class="address-card">
+                                <h6>
+                                    {{ address.full_name }}
+                                    {% if address.is_default %}
+                                        <span class="default-badge">Default</span>
+                                    {% endif %}
+                                </h6>
+                                <p>{{ address.address_line_1 }}</p>
+                                {% if address.address_line_2 %}
+                                    <p>{{ address.address_line_2 }}</p>
+                                {% endif %}
+                                <p>{{ address.city }}, {{ address.state }} {{ address.pincode }}</p>
+                                <p>Phone: {{ address.phone }}</p>
+                                
+                                <div class="address-actions">
+                                    <button class="btn btn-sm btn-outline-primary me-2" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editAddressModal{{ address.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if not address.is_default %}
+                                    <button class="btn btn-sm btn-outline-success me-2" 
+                                            onclick="setDefaultAddress({{ address.id }})">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteAddress({{ address.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <p>You haven't added any addresses yet.</p>
+                                
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Address Modal -->
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'add_address' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="phone" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 1</label>
+                        <input type="text" name="address_line_1" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 2 (Optional)</label>
+                        <input type="text" name="address_line_2" class="form-control">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">City</label>
+                                <input type="text" name="city" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">State</label>
+                                <input type="text" name="state" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PIN Code</label>
+                        <input type="text" name="pincode" class="form-control" required>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="is_default" class="form-check-input" id="defaultAddress">
+                        <label class="form-check-label" for="defaultAddress">Set as default address</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Save Address</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Address Modal Template -->
+{% for address in addresses %}
+<div class="modal fade" id="editAddressModal{{ address.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'edit_address' address.id %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-control" value="{{ address.full_name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="phone" class="form-control" value="{{ address.phone }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 1</label>
+                        <input type="text" name="address_line_1" class="form-control" value="{{ address.address_line_1 }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 2 (Optional)</label>
+                        <input type="text" name="address_line_2" class="form-control" value="{{ address.address_line_2 }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">City</label>
+                                <input type="text" name="city" class="form-control" value="{{ address.city }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">State</label>
+                                <input type="text" name="state" class="form-control" value="{{ address.state }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PIN Code</label>
+                        <input type="text" name="pincode" class="form-control" value="{{ address.pincode }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Update Address</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function setDefaultAddress(addressId) {
+    if (confirm('Set this as your default address?')) {
+        window.location.href = `/accounts/set_default_address/${addressId}/`;
+    }
+}
+
+function deleteAddress(addressId) {
+    if (confirm('Are you sure you want to delete this address?')) {
+        window.location.href = `/accounts/delete_address/${addressId}/`;
+    }
+}
+</script>
+{% endblock %} 
