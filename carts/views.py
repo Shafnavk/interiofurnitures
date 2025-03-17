@@ -92,7 +92,7 @@ def remove_cart_item(request, cart_item_id):
         cart = cart_item.cart
         cart_items = CartItem.objects.filter(cart=cart)
         total = sum(item.product.price * item.quantity for item in cart_items)
-        tax = (18 * total) / 100  # Adjusted tax to 18% as per template
+        tax = (2 * total) / 100 
         grand_total = total + tax
         
         return JsonResponse({

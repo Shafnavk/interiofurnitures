@@ -8,6 +8,9 @@ from store.models import Product, ProductImage
 from .forms import ProductForm, ProductImageForm
 from category.models import Category
 from .forms import CategoryForm
+from orders.models import Order, OrderProduct
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 import base64
 from django.core.files.base import ContentFile
 import json
@@ -44,12 +47,14 @@ def adminhome(request):
         return redirect('dashboard')
     total_users = Account.objects.filter(is_superadmin=False).count()
     total_products = Product.objects.count()
+    total_orders = Order.objects.count()
 
     context = {
         "email": request.user.email,
         "first_name": request.user.first_name,
         "total_users": total_users,
         "total_products": total_products,
+         "total_orders": total_orders,
     }
     return render(request, 'adminn/adminhome.html', context)  
 
@@ -271,3 +276,29 @@ def permanent_delete_category(request, category_id):
     
     return redirect('adminn:categorylist')
 
+@login_required
+def admin_orders(request):
+    if not request.user.is_superadmin:
+        return redirect('home')
+        
+    orders = Order.objects.all().order_by('-created_at')
+    context = {
+        'orders': orders,
+    }
+    return render(request, 'adminn/orders.html', context)
+
+@login_required
+def update_order_status(request, order_id):
+    if not request.user.is_superadmin:
+        return redirect('home')
+        
+    if request.method == 'POST':
+        order = get_object_or_404(Order, id=order_id)
+        new_status = request.POST.get('status')
+        if new_status in dict(Order.STATUS):
+            order.status = new_status
+            order.save()
+            messages.success(request, f'Order #{order.id} status updated to {new_status}')
+        else:
+            messages.error(request, 'Invalid status')
+    return redirect('adminn:admin_orders')

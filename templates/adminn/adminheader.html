@@ -109,7 +109,7 @@
                 <a href="{% url 'adminn:categorylist' %}" class="nav-link">CATEGORIES</a>
                 <a href="{% url 'adminn:productlist' %}" class="nav-link">PRODUCTS</a>
                 <a href="" class="nav-link">COUPONS</a>
-                <a href="" class="nav-link">ORDERS</a>
+                <a href="{% url 'adminn:admin_orders' %}" class="nav-link">ORDERS</a>
                 <div>
                     <form method="POST" action="{% url 'logout' %}" style="display: inline;">
                         {% csrf_token %}

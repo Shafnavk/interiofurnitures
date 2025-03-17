@@ -1,0 +1,89 @@
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Order Management</h1>
+    
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table me-1"></i>
+            Orders List
+        </div>
+        <div class="card-body">
+            <table id="ordersTable" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Total Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.user.email }}</td>
+                        <td>₹{{ order.order_total }}</td>
+                        <td>
+                            <span class="badge {% if order.status == 'Delivered' %}bg-success
+                                           {% elif order.status == 'Cancelled' %}bg-danger
+                                           {% elif order.status == 'Processing' %}bg-primary
+                                           {% else %}bg-warning{% endif %}">
+                                {{ order.status }}
+                            </span>
+                        </td>
+                        <td>{{ order.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
+                                Update Status
+                            </button>
+                            
+                            <!-- Modal -->
+                            <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form action="{% url 'adminn:update_order_status' order.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Update Order #{{ order.id }} Status</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <select name="status" class="form-select">
+                                                    {% for status_code, status_name in order.STATUS %}
+                                                    <option value="{{ status_code }}" {% if order.status == status_code %}selected{% endif %}>
+                                                        {{ status_name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <button type="submit" class="btn btn-primary">Update Status</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#ordersTable').DataTable();
+    });
+</script>
+{% endblock %}

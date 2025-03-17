@@ -57,73 +57,11 @@ def get_cities(request):
     cities = CITIES_BY_STATE.get(state_code, [])
     return JsonResponse({'cities': cities})
  
-def payments(request):
-    try:
-        if request.method == 'POST':
-            body = json.loads(request.body)
-            # Get the order using the latest order for the user that's not ordered
-            order = Order.objects.filter(
-                user=request.user,
-                is_ordered=False
-            ).latest('created_at')
-
-            # Store transaction details inside Order model
-            order.payment_method = body['payment_method']
-            order.is_ordered = True
-            order.save()
-
-            # Move the cart items to Order Product table and update stock
-            cart_items = CartItem.objects.filter(cart__cart_id=_cart_id(request))
-
-            for item in cart_items:
-                orderproduct = OrderProduct()
-                orderproduct.order_id = order.id
-                orderproduct.user_id = request.user.id
-                orderproduct.product_id = item.product_id
-                orderproduct.quantity = item.quantity
-                orderproduct.product_price = item.product.price
-                orderproduct.ordered = True
-                orderproduct.save()
-
-                # Reduce the quantity of sold products
-                product = Product.objects.get(id=item.product_id)
-                product.stock -= item.quantity
-                product.save()
-
-            # Clear cart
-            CartItem.objects.filter(cart__cart_id=_cart_id(request)).delete()
-
-            # Send order received email to customer
-            try:
-                mail_subject = 'Thank you for your order!'
-                message = render_to_string('orders/order_received_email.html', {
-                    'user': request.user,
-                    'order': order,
-                })
-                to_email = request.user.email
-                send_email = EmailMessage(mail_subject, message, to=[to_email])
-                send_email.send()
-            except Exception as e:
-                print('Email sending failed:', str(e))
-
-            # Send order number and transaction id back to sendData method via JsonResponse
-            data = {
-                'order_number': order.order_number,
-                'payment_method': order.payment_method,
-            }
-            return JsonResponse(data)
-        
-        return JsonResponse({'error': 'Invalid request method'}, status=400)
-    except Order.DoesNotExist:
-        return JsonResponse({'error': 'Order not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required(login_url='login')
 def place_order(request, total=0, quantity=0):
     current_user = request.user
 
-    # If the cart count is less than or equal to 0, then redirect back to shop
     cart_items = CartItem.objects.filter(cart__cart_id=_cart_id(request))
     cart_count = cart_items.count()
     if cart_count <= 0:
@@ -138,38 +76,44 @@ def place_order(request, total=0, quantity=0):
     grand_total = total + tax
 
     if request.method == 'POST':
-        # Check if using existing address
         address_id = request.POST.get('selected_address')
         save_address = request.POST.get('save_address') == 'on'
 
         if address_id:
-            # Use existing address
             try:
                 address = Address.objects.get(id=address_id, user=current_user)
-                # Create order with existing address
+                print(f"Found address: {address.full_name}, {address.address_line_1}")
+               
+                name_parts = address.full_name.split()
+                first_name = name_parts[0] if name_parts else ""
+                last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ""
+              
                 order = Order.objects.create(
                     user=current_user,
-                    first_name=address.full_name.split()[0],
-                    last_name=' '.join(address.full_name.split()[1:]) if len(address.full_name.split()) > 1 else '',
+                    first_name=first_name,
+                    last_name=last_name,
                     phone=address.phone,
                     email=current_user.email,
                     address_line_1=address.address_line_1,
-                    address_line_2=address.address_line_2,
+                    address_line_2=address.address_line_2 or "",  
                     city=address.city,
                     state=address.state,
+                    country="IN", 
                     pincode=address.pincode,
                     order_total=grand_total,
                     tax=tax,
-                    ip=request.META.get('REMOTE_ADDR')
+                    ip=request.META.get('REMOTE_ADDR'),
+                    is_ordered=False
                 )
+                print(f"Created order with ID: {order.id}")
+                
             except Address.DoesNotExist:
                 messages.error(request, 'Selected address not found')
                 return redirect('checkout')
         else:
-            # Use form data for new address
+           
             form = OrderForm(request.POST)
             if form.is_valid():
-                # Create order with form data
                 order = Order.objects.create(
                     user=current_user,
                     first_name=form.cleaned_data['first_name'],
@@ -182,13 +126,13 @@ def place_order(request, total=0, quantity=0):
                     state=form.cleaned_data['state'],
                     city=form.cleaned_data['city'],
                     pincode=form.cleaned_data['pincode'],
-                    order_note=form.cleaned_data['order_note'],
+                    order_note=form.cleaned_data.get('order_note', ''),
                     order_total=grand_total,
                     tax=tax,
-                    ip=request.META.get('REMOTE_ADDR')
+                    ip=request.META.get('REMOTE_ADDR'),
+                    is_ordered=False  
                 )
 
-                # Save as new address if requested
                 if save_address:
                     Address.objects.create(
                         user=current_user,
@@ -205,7 +149,6 @@ def place_order(request, total=0, quantity=0):
                 messages.error(request, 'Please correct the errors in the form')
                 return redirect('checkout')
 
-        # Generate order number
         yr = int(datetime.date.today().strftime('%Y'))
         dt = int(datetime.date.today().strftime('%d'))
         mt = int(datetime.date.today().strftime('%m'))
@@ -215,34 +158,6 @@ def place_order(request, total=0, quantity=0):
         order.order_number = order_number
         order.save()
 
-        # Create order products
-        for cart_item in cart_items:
-            OrderProduct.objects.create(
-                order=order,
-                user=current_user,
-                product=cart_item.product,
-                quantity=cart_item.quantity,
-                product_price=cart_item.product.price,
-                ordered=True
-            )
-            # Reduce stock
-            cart_item.product.stock -= cart_item.quantity
-            cart_item.product.save()
-
-        # Clear cart
-        CartItem.objects.filter(cart__cart_id=_cart_id(request)).delete()
-
-        # Send order confirmation email
-        mail_subject = 'Thank you for your order!'
-        message = render_to_string('orders/order_received_email.html', {
-            'user': current_user,
-            'order': order,
-        })
-        to_email = current_user.email
-        send_email = EmailMessage(mail_subject, message, to=[to_email])
-        send_email.send()
-
-        # Prepare context for payment page
         context = {
             'order': order,
             'cart_items': cart_items,
@@ -253,6 +168,65 @@ def place_order(request, total=0, quantity=0):
         return render(request, 'orders/payments.html', context)
 
     return redirect('checkout')
+
+def payments(request):
+    try:
+        if request.method == 'POST':
+            body = json.loads(request.body)
+            order_number = body.get('order_number')
+  
+            order = Order.objects.get(
+                order_number=order_number,
+                user=request.user,
+                is_ordered=False
+            )
+
+            order.payment_method = body['payment_method']
+            order.is_ordered = True
+            order.save()
+
+            cart_items = CartItem.objects.filter(cart__cart_id=_cart_id(request))
+
+            for item in cart_items:
+                orderproduct = OrderProduct()
+                orderproduct.order_id = order.id
+                orderproduct.user_id = request.user.id
+                orderproduct.product_id = item.product_id
+                orderproduct.quantity = item.quantity
+                orderproduct.product_price = item.product.price
+                orderproduct.ordered = True
+                orderproduct.save()
+
+                product = Product.objects.get(id=item.product_id)
+                product.stock -= item.quantity
+                product.save()
+
+            CartItem.objects.filter(cart__cart_id=_cart_id(request)).delete()
+
+            try:
+                mail_subject = 'Thank you for your order!'
+                message = render_to_string('orders/order_received_email.html', {
+                    'user': request.user,
+                    'order': order,
+                })
+                to_email = request.user.email
+                send_email = EmailMessage(mail_subject, message, to=[to_email])
+                send_email.send()
+            except Exception as e:
+                print('Email sending failed:', str(e))
+
+            data = {
+                'order_number': order.order_number,
+                'payment_method': order.payment_method,
+            }
+            return JsonResponse(data)
+        
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Order not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
 
 def order_complete(request):
     order_number = request.GET.get('order_number')
