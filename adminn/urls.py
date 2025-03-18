@@ -24,4 +24,6 @@ urlpatterns = [
     path('permanent-delete-category/<int:category_id>/', views.permanent_delete_category, name='permanent_delete_category'),
     path('orders/', views.admin_orders, name='admin_orders'),
     path('orders/<int:order_id>/update/', views.update_order_status, name='update_order_status'),
+    path('orders/<int:order_id>/download-invoice/', views.download_invoice, name='download_invoice'),
+    path('orders/<int:order_id>/send-invoice/', views.send_invoice, name='send_invoice'),
 ]

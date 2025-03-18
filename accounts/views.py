@@ -488,7 +488,6 @@ def edit_profile(request):
         form = UserProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Your profile has been updated.')
             return redirect('dashboard')
     else:
         form = UserProfileForm(instance=request.user)
@@ -505,7 +504,7 @@ def change_password(request):
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)
-            messages.success(request, 'Your password was successfully updated!')
+            messages.success(request, 'Your password  successfully updated!')
             return redirect('dashboard')
     else:
         form = PasswordChangeForm(request.user)
@@ -586,7 +585,6 @@ def add_address(request):
             is_default=is_default
         )
         address.save()
-        messages.success(request, 'Address added successfully.')
         return redirect('manage_addresses')
 
 @login_required
@@ -611,7 +609,6 @@ def delete_address(request, address_id):
     address = get_object_or_404(Address, id=address_id, user=request.user)
     if not address.is_default:
         address.delete()
-        messages.success(request, 'Address deleted successfully.')
     else:
         messages.error(request, 'Cannot delete default address.')
     return redirect('manage_addresses')
@@ -621,5 +618,4 @@ def set_default_address(request, address_id):
     address = get_object_or_404(Address, id=address_id, user=request.user)
     address.is_default = True
     address.save()
-    messages.success(request, 'Default address updated successfully.')
     return redirect('manage_addresses')

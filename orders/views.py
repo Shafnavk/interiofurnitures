@@ -14,6 +14,8 @@ from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from carts.views import _cart_id
 from django.contrib import messages
+from django.http import HttpResponse
+
 
 @login_required(login_url='login')
 def checkout(request, total=0, quantity=0):
@@ -250,4 +252,5 @@ def order_complete(request):
         return render(request, 'orders/order_complete.html', context)
     except (Order.DoesNotExist):
         return redirect('home')
+
 

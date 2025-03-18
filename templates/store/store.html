@@ -50,7 +50,20 @@
         text-decoration: none !important;
         color: inherit !important;
     }
+    .detail-btn {
+    font-weight: bold;
+    padding: 12px 30px;
+    border-radius: 30px;
+    color: white !important; /* Ensure text is clearly visible */
+    background: #3b5d50; /* Darker shade for contrast */
+    border: none;
     
+}
+
+.detail-btn:hover {
+    background: #2f2f2f; /* Change color on hover */
+    transform: scale(1.05); /* Slight zoom effect */
+}
 </style>
 
 <div class="container-fluid mt-3">
@@ -165,7 +178,7 @@
                             <a href="{{ product.get_url }}"><h5 class="card-title">{{product.product_name}}</h5></a>
                             <span class="float-right">4.5/5 <i class="fa fa-star text-warning"></i></span>
                             <p class="card-text">Rs: {{ product.price }}</p>
-                            <a href="{{ product.get_url }}" class="btn btn-sm btn-primary"> Vew Details</a>
+                            <a href="{{ product.get_url }}" class="detail-btn"> Vew Details</a>
                         </div>
                     </div>
                 </div>

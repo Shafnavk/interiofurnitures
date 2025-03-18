@@ -1,9 +1,12 @@
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.models import User
 from django.contrib import messages, auth
 from django.contrib.auth.decorators import user_passes_test
 from accounts.models import Account
+from .utils import generate_invoice_pdf, send_invoice_email
+from .utils import generate_invoice_pdf, send_invoice_email
+
 from store.models import Product, ProductImage
 from .forms import ProductForm, ProductImageForm
 from category.models import Category
@@ -146,7 +149,6 @@ def editproduct(request, product_id):
                             product=product,
                             image=image
                         )
-                        messages.success(request, 'Image uploaded successfully')
                     except Exception as e:
                         messages.error(request, f'Error processing image: {str(e)}')
                 
@@ -174,7 +176,6 @@ def delete_product_image(request, image_id):
         image = get_object_or_404(ProductImage, id=image_id)
         product_id = image.product.id
         image.delete()
-        messages.success(request, "Image deleted successfully")
         return JsonResponse({"success": True})
     return JsonResponse({"success": False})
 
@@ -182,21 +183,18 @@ def delete_product_image(request, image_id):
 def deleteproduct(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     product.soft_delete()
-    messages.success(request, "Product has been unlisted.")
     return redirect('adminn:productlist')
 
 @superuser_required
 def restore_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     product.restore()
-    messages.success(request, "Product has been listed successfully.")
     return redirect('adminn:productlist')
 
 @superuser_required
 def permanent_delete_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     product.delete()
-    messages.success(request, "Product has been permanently deleted.")
     return redirect('adminn:productlist')
 
 
@@ -237,7 +235,6 @@ def editcategory(request, category_id):
         form = CategoryForm(request.POST, request.FILES, instance=category)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Category updated successfully!')
             return redirect('adminn:categorylist')
     else:
         form = CategoryForm(instance=category)
@@ -248,7 +245,6 @@ def deletecategory(request, category_id):
     try:
         category = get_object_or_404(Category, id=category_id)
         category.soft_delete()
-        messages.success(request, 'Category has been unlisted.')
     except Exception as e:
         messages.error(request, f'Error deleting category: {str(e)}')
     
@@ -259,7 +255,6 @@ def restore_category(request, category_id):
     try:
         category = get_object_or_404(Category, id=category_id)
         category.restore()
-        messages.success(request, 'Category has been listed successfully.')
     except Exception as e:
         messages.error(request, f'Error restoring category: {str(e)}')
     
@@ -270,7 +265,6 @@ def permanent_delete_category(request, category_id):
     try:
         category = get_object_or_404(Category, id=category_id)
         category.delete()
-        messages.success(request, 'Category has been permanently deleted.')
     except Exception as e:
         messages.error(request, f'Error permanently deleting category: {str(e)}')
     
@@ -298,7 +292,34 @@ def update_order_status(request, order_id):
         if new_status in dict(Order.STATUS):
             order.status = new_status
             order.save()
-            messages.success(request, f'Order #{order.id} status updated to {new_status}')
         else:
             messages.error(request, 'Invalid status')
+    return redirect('adminn:admin_orders')
+@login_required
+def download_invoice(request, order_id):
+    if not request.user.is_superadmin:
+        return redirect('home')
+        
+    order = get_object_or_404(Order, id=order_id)
+    pdf = generate_invoice_pdf(order)
+    
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="invoice_{order.id}.pdf"'
+        return response
+    
+    messages.error(request, 'Error generating invoice')
+    return redirect('adminn:admin_orders')
+
+@login_required
+def send_invoice(request, order_id):
+    if not request.user.is_superadmin:
+        return redirect('home')
+        
+    order = get_object_or_404(Order, id=order_id)
+    if send_invoice_email(order):
+        messages.success(request, f'Invoice sent to {order.user.email}')
+    else:
+        messages.error(request, 'Error sending invoice')
+    
     return redirect('adminn:admin_orders')

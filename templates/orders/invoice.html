@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice #{{ order.id }}</title>
+    <style>
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            font-size: 16px;
+            line-height: 24px;
+            font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+            color: #555;
+        }
+        
+        .header {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .customer-info {
+            margin-bottom: 20px;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .total {
+            text-align: right;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-box">
+        <div class="header">
+            <h2>{{ company_name }}</h2>
+            <p>{{ company_address }}</p>
+            <p>Phone: {{ company_phone }}</p>
+        </div>
+
+        <div class="customer-info">
+            <h3>Invoice #{{ order.id }}</h3>
+            <p>Date: {{ order.created_at|date:"F d, Y" }}</p>
+            <p>Customer: {{ order.user.get_full_name|default:order.user.email }}</p>
+            <p>Shipping Address: {{ order.address }}</p>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Order Summary</h4>
+                    </div>
+                    <div class="card-body">
+                        {% for cart_item in cart_items %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{{ cart_item.product.product_name }} × {{ cart_item.quantity }}</span>
+                            <span>₹{{ cart_item.sub_total }}</span>
+                        </div>
+                        {% endfor %}
+                        <hr>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal</span>
+                            <span>₹{{ total }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tax (2%)</span>
+                            <span>₹{{ tax }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong>Grand Total</strong>
+                            <strong>₹{{ grand_total }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </table>
+
+        <div class="total">
+            <p><strong>Total Amount: ₹{{ order.total_amount }}</strong></p>
+        </div>
+    </div>
+</body>
+</html>

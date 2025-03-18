@@ -39,9 +39,17 @@
                         </td>
                         <td>{{ order.created_at|date:"M d, Y" }}</td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
-                                Update Status
-                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
+                                    Update Status
+                                </button>
+                                <a href="{% url 'adminn:download_invoice' order.id %}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-download"></i> Invoice
+                                </a>
+                                <a href="{% url 'adminn:send_invoice' order.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-envelope"></i> Email Invoice
+                                </a>
+                            </div>
                             
                             <!-- Modal -->
                             <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1" aria-hidden="true">
