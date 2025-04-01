@@ -2,6 +2,10 @@ from django import forms
 from .models import Order
 import re
 from .locations import COUNTRIES, STATES_BY_COUNTRY
+    
+from django import forms
+from .models import Coupon
+from django.utils import timezone
 
 class OrderForm(forms.ModelForm):
     
@@ -42,3 +46,45 @@ class OrderForm(forms.ModelForm):
         if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             raise forms.ValidationError("Please enter a valid email address")
         return email
+
+
+class CouponForm(forms.ModelForm):
+    valid_from = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        help_text="When this coupon becomes valid"
+    )
+    valid_to = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        help_text="When this coupon expires"
+    )
+    
+    class Meta:
+        model = Coupon
+        fields = ['code', 'discount_type', 'discount_value', 'minimum_purchase', 
+                  'valid_from', 'valid_to', 'max_usage', 'is_active']
+        
+    def clean_valid_to(self):
+        valid_from = self.cleaned_data.get('valid_from')
+        valid_to = self.cleaned_data.get('valid_to')
+        
+        if valid_from and valid_to and valid_to <= valid_from:
+            raise forms.ValidationError("End date must be after start date.")
+        
+        return valid_to
+    
+    def clean_discount_value(self):
+        discount_type = self.cleaned_data.get('discount_type')
+        discount_value = self.cleaned_data.get('discount_value')
+        
+        if discount_type == 'percentage' and discount_value > 100:
+            raise forms.ValidationError("Percentage discount cannot exceed 100%.")
+        
+        if discount_value <= 0:
+            raise forms.ValidationError("Discount must be greater than zero.")
+            
+        return discount_value
+
+
+class CouponApplyForm(forms.Form):
+    """Form for customers to apply a coupon code"""
+    code = forms.CharField(label="Coupon Code", max_length=50)

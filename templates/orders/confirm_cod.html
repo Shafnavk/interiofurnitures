@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<br>
+<br>
+<section class="section-content padding-y bg">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Confirm Cash On Delivery</h4>
+          </div>
+          <div class="card-body">
+            <h5>Order #{{ order.order_number }}</h5>
+            <hr>
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Shipping To:</h6>
+                <p>{{ order.full_name }}<br>
+                {{ order.address_line_1 }} {{ order.address_line_2 }}<br>
+                {{ order.city }}, {{ order.state }}<br>
+                {{ order.country }} - {{ order.pincode }}<br>
+                {{ order.phone }}</p>
+              </div>
+              <div class="col-md-6">
+                <h6>Order Summary:</h6>
+                <dl class="dlist-align">
+                  <dt>Total price:</dt>
+                  <dd class="text-right">Rs. {{ total }}</dd>
+                </dl>
+                <dl class="dlist-align">
+                  <dt>Tax:</dt>
+                  <dd class="text-right">Rs. {{ tax }}</dd>
+                </dl>
+                <dl class="dlist-align">
+                  <dt>Discount:</dt>
+                  <dd class="text-right">Rs. {{ discount_amount }}</dd>
+                </dl>
+                <dl class="dlist-align">
+                  <dt>Grand Total:</dt>
+                  <dd class="text-right text-dark b"><strong>Rs. {{ grand_total }}</strong></dd>
+                </dl>
+              </div>
+            </div>
+            <hr>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> By confirming this order, you agree to pay the full amount in cash at the time of delivery.
+            </div>
+            <div class="text-center mt-4">
+              <form action="{% url 'cash_on_delivery' order.order_number %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-lg">Confirm Order</button>
+                <a href="{% url 'checkout' %}" class="btn btn-outline-secondary btn-lg ml-2">Cancel</a>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

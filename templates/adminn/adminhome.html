@@ -54,6 +54,9 @@
     .card-3 {
         background-color: #6C8F86;
     }
+    .card-4 {
+        background-color: #7DAA9F;
+    }
     .stat-icon {
         font-size: 2rem;
         opacity: 0.8;
@@ -94,7 +97,7 @@
                     <h6 class="mb-4">Welcome, {{ first_name }}!</h6>
                     
                     <div class="row mt-4">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card custom-card card-1 text-white">
                                 <div class="card-body">
                                     <i class="fas fa-users stat-icon"></i>
@@ -105,7 +108,7 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card custom-card card-2 text-white">
                                 <div class="card-body">
                                     <i class="fas fa-box-open stat-icon"></i>
@@ -116,13 +119,24 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card custom-card card-3 text-white">
                                 <div class="card-body">
                                     <i class="fas fa-shopping-cart stat-icon"></i>
                                     <h5 class="card-title">Order Management</h5>
                                     <p class="card-text">Total Orders: {{ total_orders }}</p>
                                     <a href="{% url 'adminn:admin_orders' %}" class="btn btn-light">View Orders</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card custom-card card-4 text-white">
+                                <div class="card-body">
+                                    <i class="fas fa-chart-line stat-icon"></i>
+                                    <h5 class="card-title">Sales Reports</h5>
+                                    <p class="card-text">Generate detailed reports</p>
+                                    <a href="{% url 'adminn:sales_report' %}" class="btn btn-light">View Reports</a>
                                 </div>
                             </div>
                         </div>
@@ -200,4 +214,4 @@
 
 <!-- Add Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-{% endblock %} 
+{% endblock %}

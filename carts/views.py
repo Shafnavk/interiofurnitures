@@ -5,6 +5,7 @@ from django.contrib import messages
 from store.models import Product
 from .models import Cart, CartItem
 
+
 # Create your views here.
 
 def _cart_id(request):
@@ -107,32 +108,37 @@ def remove_cart_item(request, cart_item_id):
     messages.success(request, f'{product_name} removed from cart.')
     return redirect('cart')
 
-from django.shortcuts import render
-from django.contrib import messages
-from .models import Cart, CartItem
+
 
 def cart(request, total=0, quantity=0, cart_items=None):
     tax = 0
     grand_total = 0
+    discount_amount = 0
 
     try:
         cart = Cart.objects.get(cart_id=_cart_id(request))
         cart_items = CartItem.objects.filter(cart=cart)
 
         for cart_item in cart_items:
-           
+            
             if not cart_item.product.is_available:
                 cart_item.delete()
                 messages.warning(request, f'{cart_item.product.product_name} is no longer available.')
                 continue
-                
             
             if cart_item.quantity > cart_item.product.stock:
                 cart_item.quantity = cart_item.product.stock
                 cart_item.save()
                 messages.warning(request, f'Quantity adjusted for {cart_item.product.product_name} due to stock availability.')
+           
+            item_price = cart_item.product.price
             
-            total += (cart_item.product.price * cart_item.quantity)
+            discounted_price = cart_item.product.get_discounted_price
+            
+            item_discount = (item_price - discounted_price) * cart_item.quantity
+            discount_amount += item_discount
+          
+            total += (discounted_price * cart_item.quantity)
             quantity += cart_item.quantity
 
         tax = (2 * total) / 100  
@@ -146,6 +152,7 @@ def cart(request, total=0, quantity=0, cart_items=None):
         'total': total,
         'quantity': quantity,
         'tax': tax,
+        'discount_amount': discount_amount,
         'grand_total': grand_total,
     }
     

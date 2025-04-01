@@ -1,0 +1,144 @@
+{% extends 'adminn/adminbase.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Offer Management</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{% url 'adminn:adminhome' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Offers</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-tag me-1"></i>
+                Product Offers
+            </div>
+            <a href="{% url 'adminn:add_product_offer' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Add Product Offer
+            </a>
+        </div>
+        <div class="card-body">
+            <table id="productOffersTable" class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Product</th>
+                        <th>Discount (%)</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in product_offers %}
+                    <tr>
+                        <td>{{ offer.name }}</td>
+                        <td>{{ offer.product.product_name }}</td>
+                        <td>{{ offer.discount_percentage }}%</td>
+                        <td>{{ offer.start_date }}</td>
+                        <td>{{ offer.end_date }}</td>
+                        <td>
+                            <span class="badge {% if offer.status == 'Active' %}bg-success{% elif offer.status == 'Scheduled' %}bg-info{% elif offer.status == 'Expired' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                {{ offer.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'adminn:edit_product_offer' offer.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'adminn:toggle_product_offer' offer.id %}" class="btn btn-outline-{% if offer.is_active %}warning{% else %}success{% endif %} btn-sm">
+                                    <i class="fas {% if offer.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+                                </a>
+                                <a href="{% url 'adminn:delete_product_offer' offer.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this offer?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No product offers found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-folder me-1"></i>
+                Category Offers
+            </div>
+            <a href="{% url 'adminn:add_category_offer' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Add Category Offer
+            </a>
+        </div>
+        <div class="card-body">
+            <table id="categoryOffersTable" class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Discount (%)</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in category_offers %}
+                    <tr>
+                        <td>{{ offer.name }}</td>
+                        <td>{{ offer.category.category_name }}</td>
+                        <td>{{ offer.discount_percentage }}%</td>
+                        <td>{{ offer.start_date }}</td>
+                        <td>{{ offer.end_date }}</td>
+                        <td>
+                            <span class="badge {% if offer.status == 'Active' %}bg-success{% elif offer.status == 'Scheduled' %}bg-info{% elif offer.status == 'Expired' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                {{ offer.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'adminn:edit_category_offer' offer.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'adminn:toggle_category_offer' offer.id %}" class="btn btn-outline-{% if offer.is_active %}warning{% else %}success{% endif %} btn-sm">
+                                    <i class="fas {% if offer.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+                                </a>
+                                <a href="{% url 'adminn:delete_category_offer' offer.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this offer?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No category offers found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#productOffersTable').DataTable({
+            "order": [[5, "asc"], [3, "desc"]]
+        });
+        $('#categoryOffersTable').DataTable({
+            "order": [[5, "asc"], [3, "desc"]]
+        });
+    });
+</script>
+{% endblock %}

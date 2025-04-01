@@ -1,0 +1,128 @@
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Coupon Management</h6>
+            <a href="{% url 'adminn:admin_add_coupon' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Add New Coupon
+            </a>
+        </div>
+        <div class="card-body">
+            
+            
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Type</th>
+                            <th>Value</th>
+                            <th>Min. Purchase</th>
+                            <th>Valid Period</th>
+                            <th>Usage</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for coupon in coupons %}
+                        <tr>
+                            <td>{{ coupon.code }}</td>
+                            <td>
+                                {% if coupon.discount_type == 'percentage' %}
+                                    Percentage
+                                {% else %}
+                                    Fixed Amount
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if coupon.discount_type == 'percentage' %}
+                                    {{ coupon.discount_value }}%
+                                {% else %}
+                                    Rs:{{ coupon.discount_value }}
+                                {% endif %}
+                            </td>
+                            <td>Rs:{{ coupon.minimum_purchase }}</td>
+                            <td>
+                                {{ coupon.valid_from|date:"M d, Y" }} to 
+                                {{ coupon.valid_to|date:"M d, Y" }}
+                            </td>
+                            <td>
+                                <a href="{% url 'adminn:admin_coupon_usage' coupon.id %}">
+                                    {{ coupon.usage_count }} / {{ coupon.max_usage }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if coupon.status == "Active" %}
+                                    <span class="badge badge-success">Active</span>
+                                {% elif coupon.status == "Expired" %}
+                                    <span class="badge badge-danger">Expired</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'adminn:admin_edit_coupon' coupon.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'adminn:admin_toggle_coupon' coupon.id %}" class="btn btn-sm {% if coupon.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                                    {% if coupon.is_active %}
+                                        <i class="fas fa-toggle-off"></i>
+                                    {% else %}
+                                        <i class="fas fa-toggle-on"></i>
+                                    {% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No coupons found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if coupons.has_other_pages %}
+            <div class="pagination mt-3 justify-content-center">
+                <ul class="pagination">
+                    {% if coupons.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if query %}&query={{ query }}{% endif %}{% if status %}&status={{ status }}{% endif %}">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ coupons.previous_page_number }}{% if query %}&query={{ query }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in coupons.paginator.page_range %}
+                        {% if coupons.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > coupons.number|add:'-3' and i < coupons.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if query %}&query={{ query }}{% endif %}{% if status %}&status={{ status }}{% endif %}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if coupons.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ coupons.next_page_number }}{% if query %}&query={{ query }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ coupons.paginator.num_pages }}{% if query %}&query={{ query }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Last &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

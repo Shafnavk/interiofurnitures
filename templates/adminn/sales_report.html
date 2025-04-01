@@ -1,0 +1,312 @@
+{% extends 'adminn/adminbase.html' %}
+
+{% load static %}
+{% block content %}
+{% load custom_filters %}
+<style>
+    .custom-card-header {
+        background-color: #acc7be;
+        color: #0c5460;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 24px;
+        border: 1px solid white;
+    }
+    .head {
+        background-color: #acc7be;
+        color: #0c5460;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 24px;
+    }
+    .custom-card {
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+    .stat-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #4A635D;
+        margin-bottom: 15px;
+    }
+    .btn-custom {
+        background-color: #4A635D;
+        color: white;
+        border: none;
+    }
+    .btn-custom:hover {
+        background-color: #3b4f4a;
+        color: white;
+    }
+    .report-section {
+        margin-top: 30px;
+        margin-bottom: 30px;
+    }
+    .report-heading {
+        background-color: #4A635D;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    .date-filter-form {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    .download-btn {
+        margin-right: 10px;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card custom-card">
+                <div class="card-header custom-card-header d-flex justify-content-between align-items-center">
+                    <h2 class="head">SALES REPORT</h2>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Date Filter Form -->
+                    <div class="date-filter-form">
+                        <form method="GET" action="{% url 'adminn:sales_report' %}" class="row align-items-end">
+                            <div class="col-md-3 mb-3">
+                                <label for="date_range">Date Range:</label>
+                                <select id="date_range" name="date_range" class="form-control" onchange="toggleCustomDate()">
+                                    <option value="all" {% if date_range == 'all' %}selected{% endif %}>All Time</option>
+                                    <option value="day" {% if date_range == 'day' %}selected{% endif %}>Today</option>
+                                    <option value="week" {% if date_range == 'week' %}selected{% endif %}>Last 7 Days</option>
+                                    <option value="month" {% if date_range == 'month' %}selected{% endif %}>This Month</option>
+                                    <option value="year" {% if date_range == 'year' %}selected{% endif %}>This Year</option>
+                                    <option value="custom" {% if date_range == 'custom' %}selected{% endif %}>Custom Range</option>
+                                </select>
+                            </div>
+                            
+                            <div id="custom_date_range" class="row" style="display: {% if date_range == 'custom' %}flex{% else %}none{% endif %};">
+                                <div class="col-md-6 mb-3">
+                                    <label for="start_date">Start Date:</label>
+                                    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="end_date">End Date:</label>
+                                    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <button type="submit" class="btn btn-custom">Generate Report</button>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 text-right ml-auto">
+                                <div class="btn-group">
+                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'export' %}{{ key }}={{ value }}&{% endif %}{% endfor %}export=excel" class="btn btn-success download-btn">
+                                        <i class="fas fa-file-excel"></i> Excel
+                                    </a>
+                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'export' %}{{ key }}={{ value }}&{% endif %}{% endfor %}export=pdf" class="btn btn-danger download-btn">
+                                        <i class="fas fa-file-pdf"></i> PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div class="report-section">
+                        <h4 class="report-heading">
+                            {% if date_range == 'all' %}
+                                Sales Summary - All Time
+                            {% elif date_range == 'day' %}
+                                Sales Summary - Today
+                            {% elif date_range == 'week' %}
+                                Sales Summary - Last 7 Days
+                            {% elif date_range == 'month' %}
+                                Sales Summary - {{ start_date|date:"F Y" }}
+                            {% elif date_range == 'year' %}
+                                Sales Summary - {{ start_date|date:"Y" }}
+                            {% else %}
+                                Sales Summary - {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}
+                            {% endif %}
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="stat-card p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-0">Orders</h6>
+                                            <h3 class="mt-2">{{ total_orders }}</h3>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-shopping-bag fa-3x text-muted"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="stat-card p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-0">Items Sold</h6>
+                                            <h3 class="mt-2">{{ total_items_sold }}</h3>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-box fa-3x text-muted"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="stat-card p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-0">Net Sales</h6>
+                                            <h3 class="mt-2">₹{{ net_sales }}</h3>
+                                            <small class="text-success">Gross: ₹{{ total_sales }} | Discounts: ₹{{ total_discount }}</small>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-rupee-sign fa-3x text-muted"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Coupon Usage -->
+                    {% if coupons_used %}
+                    <div class="report-section">
+                        <h4 class="report-heading">Coupon Usage</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Coupon Code</th>
+                                        <th>Usage Count</th>
+                                        <th>Total Discount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for coupon in coupons_used %}
+                                    <tr>
+                                        <td>{{ coupon.coupon__code }}</td>
+                                        <td>{{ coupon.count }}</td>
+                                        <td>₹{{ coupon.total_discount }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Daily Sales Breakdown -->
+                    {% if daily_sales %}
+                    <div class="report-section">
+                        <h4 class="report-heading">Daily Sales Breakdown</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Orders</th>
+                                        <th>Sales</th>
+                                        <th>Discounts</th>
+                                        <th>Net Sales</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for day in daily_sales %}
+                                    <tr>
+                                        <td>{{ day.date }}</td>
+                                        <td>{{ day.orders }}</td>
+                                        <td>₹{{ day.sales }}</td>
+                                        <td>₹{{ day.discounts }}</td>
+                                        <td>₹{{ day.sales|default:0|sub:day.discounts|default:0 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Orders List -->
+                    <div class="report-section">
+                        <h4 class="report-heading">Order Details</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Date</th>
+                                        <th>Customer</th>
+                                        <th>Status</th>
+                                        <th>Order Total</th>
+                                        <th>Discount</th>
+                                        <th>Net Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                    <tr>
+                                        <td>{{ order.order_number }}</td>
+                                        <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                        <td>{{ order.user.email }}</td>
+                                        <td>
+                                            <span class="badge {% if order.status == 'New' %}badge-info{% elif order.status == 'Processing' %}badge-primary{% elif order.status == 'Shipped' %}badge-warning{% elif order.status == 'Delivered' %}badge-success{% elif order.status == 'Cancelled' %}badge-danger{% endif %}">
+                                                {{ order.status }}
+                                            </span>
+                                        </td>
+                                        <td>₹{{ order.order_total }}</td>
+                                        <td>₹{{ order.discount_amount }}</td>
+                                        <td>₹{{ order.order_total|sub:order.discount_amount }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCustomDate() {
+        const dateRange = document.getElementById('date_range').value;
+        const customDateDiv = document.getElementById('custom_date_range');
+        
+        if (dateRange === 'custom') {
+            customDateDiv.style.display = 'flex';
+        } else {
+            customDateDiv.style.display = 'none';
+        }
+    }
+    
+    // Set min/max date constraints for the date pickers
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        if (startDateInput && endDateInput) {
+            startDateInput.addEventListener('change', function() {
+                endDateInput.min = startDateInput.value;
+            });
+            
+            endDateInput.addEventListener('change', function() {
+                startDateInput.max = endDateInput.value;
+            });
+        }
+    });
+</script>
+
+{% endblock %}

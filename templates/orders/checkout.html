@@ -137,33 +137,68 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Order Summary -->
         <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Have a coupon?</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'apply_coupon' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" name="code" class="form-control" placeholder="Enter coupon code">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-primary" type="submit">Apply</button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    {% if request.session.coupon_id %}
+                    <div class="mt-3">
+                        <div class="alert alert-success d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-tag mr-2"></i>
+                                Coupon applied! You saved Rs:{{ request.session.discount|floatformat:2 }}
+                            </div>
+                            
+                        </div>
+                        <a href="{% url 'remove_coupon' %}" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-times"></i> Remove
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header">
                     <h4 class="mb-0">Order Summary</h4>
                 </div>
                 <div class="card-body">
-                    {% for cart_item in cart_items %}
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>{{ cart_item.product.product_name }} × {{ cart_item.quantity }}</span>
-                        <span>₹{{ cart_item.sub_total }}</span>
-                    </div>
-                    {% endfor %}
-                    <hr>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal</span>
-                        <span>₹{{ total }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Tax (2%)</span>
-                        <span>₹{{ tax }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <strong>Grand Total</strong>
-                        <strong>₹{{ grand_total }}</strong>
-                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-0">
+                            Subtotal
+                            <span>Rs:{{ total }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 pb-0">
+                            Tax
+                            <span>Rs:{{ tax}}</span>
+                        </li>
+                        
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 pb-0 text-success">
+                            Discount
+                            <span>-Rs:{{coupon_discount_amount }}</span>
+                        </li>
+                        
+                        
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 mb-3">
+                            <div>
+                                <strong>Total amount</strong>
+                            </div>
+                            <span><strong>Rs:{{ grand_total }}</strong></span>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>

@@ -3,6 +3,7 @@
 {% block content %}
 
 <style>
+    /* Keep all existing styles */
     .sidebar {
         position: sticky;
         top: 20px;
@@ -10,65 +11,44 @@
         overflow-y: auto;
     }
     
-    .category-link {
-        text-decoration: none;
-        color: darkgreen;
+    /* ... all other existing styles ... */
+
+    /* Add new styles for discounted prices */
+    .price-container {
+        margin-bottom: 0.5rem;
     }
 
-    .category-link:hover {
-        color: black;
-    }
-    
-    /* Custom scrollbar for sidebar */
-    .sidebar::-webkit-scrollbar {
-        width: 5px;
-    }
-    
-    .sidebar::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-    
-    .sidebar::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 5px;
-    }
-    
-    .sidebar::-webkit-scrollbar-thumb:hover {
-        background: #555;
+    .original-price {
+        text-decoration: line-through;
+        color: #999;
+        margin-right: 0.5rem;
+        font-size: 0.9rem;
     }
 
-    /* Ensure main content area scrolls independently */
-    .main-content {
-        min-height: calc(100vh - 40px);
-        overflow-y: auto;
+    .discounted-price {
+        color: #4A635D;
+        font-weight: bold;
     }
-    .card-body a {
-        text-decoration: none !important;
-        color: inherit !important;
-    }
-    .card-body a:hover {
-        text-decoration: none !important;
-        color: inherit !important;
-    }
-    .detail-btn {
-    font-weight: bold;
-    padding: 12px 30px;
-    border-radius: 30px;
-    color: white !important; /* Ensure text is clearly visible */
-    background: #3b5d50; /* Darker shade for contrast */
-    border: none;
-    
-}
 
-.detail-btn:hover {
-    background: #2f2f2f; /* Change color on hover */
-    transform: scale(1.05); /* Slight zoom effect */
-}
+    .discount-badge {
+        display: inline-block;
+        background-color: #e53935;
+        color: white;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-left: 0.5rem;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 5;
+    }
 </style>
 
 <div class="container-fluid mt-3">
     <div class="row">
-       
+        <!-- Sidebar (unchanged) -->
         <aside class="col-md-3 col-lg-2">
             <div class="sidebar">
                 <!-- Categories Card -->
@@ -139,8 +119,6 @@
                                     <option value="price_asc" {% if request.GET.sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
                                     <option value="price_desc" {% if request.GET.sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
                                     <option value="newest" {% if request.GET.sort_by == 'newest' %}selected{% endif %}>Recently added</option>
-                                    
-                                    
                                 </select>
                             </div>
                             
@@ -164,21 +142,44 @@
             <!-- Product Grid -->
             <div class="row">
                 {% if products %}
-                {% for product in products%}
+                {% for product in products %}
                 <div class="col-12 col-sm-6 col-lg-4 mb-4">
                     <div class="card h-100 text-center">
+                        <!-- Discount Badge -->
+                        {% if product.discount_percentage > 0 %}
+                        <div class="discount-badge">{{ product.discount_percentage }}% OFF</div>
+                        {% endif %}
+                        
+                        <!-- Wishlist Button (only for authenticated users) -->
+                        {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'add_to_wishlist' product.id %}" class="wishlist-form">
+                            {% csrf_token %}
+                            <button type="submit" class="wishlist-btn" title="{% if product.id in wishlist_product_ids %}Remove from{% else %}Add to{% endif %} Wishlist">
+                                <i class="fa fa-heart {% if product.id in wishlist_product_ids %}filled{% endif %}"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        
                         <a href="{{ product.get_url }}">
                             {% if product.images.first %}
                             <img src="{{ product.images.first.image.url }}" class="card-img-top img-fluid" alt="{{ product.product_name }}">
-                            {%else%}
+                            {% else %}
                             <p>No image available</p>
                             {% endif %}
                         </a>
                         <div class="card-body">
                             <a href="{{ product.get_url }}"><h5 class="card-title">{{product.product_name}}</h5></a>
                             <span class="float-right">4.5/5 <i class="fa fa-star text-warning"></i></span>
-                            <p class="card-text">Rs: {{ product.price }}</p>
-                            <a href="{{ product.get_url }}" class="detail-btn"> Vew Details</a>
+                            
+                            <div class="price-container">
+                                {% if product.discount_percentage > 0 %}
+                                    <span class="original-price">Rs: {{ product.price }}</span>
+                                    <span class="discounted-price">Rs: {{ product.get_discounted_price }}</span>
+                                {% else %}
+                                    <p class="card-text">Rs: {{ product.price }}</p>
+                                {% endif %}
+                            </div>
+                            <a href="{{ product.get_url }}" class="detail-btn">View Details</a>
                         </div>
                     </div>
                 </div>

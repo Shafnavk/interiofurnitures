@@ -2,7 +2,7 @@
 from django.contrib import messages, auth
 from django.shortcuts import redirect, render, get_object_or_404
 from . forms import RegistrationForm, UserProfileForm
-from . models import Account
+from . models import Account, Wallet, WalletTransaction
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_protect
@@ -24,8 +24,8 @@ import secrets
 import urllib.parse
 import requests
 import logging
-from django.views.decorators.cache import never_cache
 logger = logging.getLogger(__name__)
+from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from django.db import transaction
 from datetime import timedelta
@@ -514,6 +514,12 @@ def change_password(request):
     }
     return render(request, 'accounts/change_password.html', context)
 
+@login_required
+def user_orders(request):
+    # Get all orders for the current user
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'users/orders.html', {'orders': orders})
+
 @login_required(login_url='login')
 def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
@@ -526,23 +532,62 @@ def order_detail(request, order_id):
     return render(request, 'accounts/order_detail.html', context)
 
 @login_required(login_url='login')
+def track_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    tracking_updates = order.tracking_updates.all()
+    
+    # Calculate days remaining until delivery (if estimated date exists)
+    days_remaining = None
+    if order.estimated_delivery_date:
+        today = timezone.now().date()
+        if today <= order.estimated_delivery_date:
+            days_remaining = (order.estimated_delivery_date - today).days
+    
+    context = {
+        'order': order,
+        'tracking_updates': tracking_updates,
+        'days_remaining': days_remaining,
+    }
+    return render(request, 'accounts/track_order.html', context)
+
+@login_required(login_url='login')
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
-    if order.status == 'New':
-        order.status = 'Cancelled'
-        order.save()
-      
-        ordered_products = OrderProduct.objects.filter(order=order)
-        for item in ordered_products:
-            product = item.product
-            product.stock += item.quantity
-            product.save()
-            
-        messages.success(request, 'Order has been cancelled successfully.')
+    
+    # Define cancellable statuses
+    cancellable_statuses = ['New', 'Pending', 'Processing']
+    
+    if order.status in cancellable_statuses:
+        try:
+            with transaction.atomic():
+                # Get cancellation reason if provided
+                cancellation_reason = request.POST.get('cancellation_reason', 'User requested')
+                
+                # Update order status
+                order.status = 'Cancelled'
+                order.cancellation_reason = cancellation_reason
+                order.cancelled_at = timezone.now()
+                order.save()
+                
+                # Restore product stock
+                ordered_products = OrderProduct.objects.filter(order=order)
+                for item in ordered_products:
+                    product = item.product
+                    product.stock += item.quantity
+                    product.save()
+                
+                # Optional: Create a cancellation log or notification
+                # You might want to create a CancellationLog model or send an email notification
+                
+                messages.success(request, 'Order has been cancelled successfully.')
+                
+        except Exception as e:
+            logger.error(f"Order cancellation error: {str(e)}")
+            messages.error(request, 'An error occurred while cancelling the order.')
     else:
-        messages.error(request, 'This order cannot be cancelled.')
+        messages.error(request, f'Order with status {order.status} cannot be cancelled.')
+    
     return redirect('order_detail', order_id=order_id)
-
 @csrf_protect
 @never_cache   
 @login_required(login_url="login")
@@ -619,3 +664,47 @@ def set_default_address(request, address_id):
     address.is_default = True
     address.save()
     return redirect('manage_addresses')
+
+
+@login_required(login_url='login')
+def request_refund(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    eligible_statuses = ['Delivered', 'Shipped']
+    ineligible_refund_statuses = ['Approved', 'Completed']
+    
+    if order.status not in eligible_statuses:
+        messages.error(request, f'Orders with status "{order.status}" are not eligible for refund.')
+        return redirect('order_detail', order_id=order_id)
+    
+    if order.refund_status in ineligible_refund_statuses:
+        messages.error(request, f'This order has already been refunded.')
+        return redirect('order_detail', order_id=order_id)
+    
+    if request.method == 'POST':
+        refund_reason = request.POST.get('refund_reason')
+        if not refund_reason:
+            messages.error(request, 'Please provide a reason for the refund.')
+            return redirect('request_refund', order_id=order_id)
+        
+        order.refund_status = 'Pending'
+        order.refund_reason = refund_reason
+        order.save()
+        
+        messages.success(request, 'Your refund request has been submitted and is being reviewed.')
+        return redirect('order_detail', order_id=order_id)
+    
+    return render(request, 'accounts/request_refund.html', {'order': order})
+
+@login_required(login_url='login')
+def my_wallet(request):
+   
+    wallet, created = Wallet.objects.get_or_create(user=request.user)
+    transactions = WalletTransaction.objects.filter(wallet=wallet).order_by('-created_at')
+    
+    context = {
+        'wallet': wallet,
+        'transactions': transactions,
+    }
+    return render(request, 'accounts/my_wallet.html', context)
+

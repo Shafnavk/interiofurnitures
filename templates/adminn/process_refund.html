@@ -1,0 +1,76 @@
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4>Process Refund Request</h4>
+                </div>
+                <div class="card-body">
+                    <div class="order-details mb-4">
+                        <h5>Order Details</h5>
+                        <table class="table">
+                            <tr>
+                                <th>Order Number</th>
+                                <td>{{ order.order_number }}</td>
+                            </tr>
+                            <tr>
+                                <th>Customer</th>
+                                <td>{{ order.user.first_name }} {{ order.user.last_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Order Date</th>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Order Total</th>
+                                <td>₹{{ order.order_total }}</td>
+                            </tr>
+                            <tr>
+                                <th>Payment Method</th>
+                                <td>{{ order.payment.payment_method }}</td>
+                            </tr>
+                            <tr>
+                                <th>Order Status</th>
+                                <td>{{ order.status }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="refund-details mb-4">
+                        <h5>Refund Request Details</h5>
+                        <div class="alert alert-info">
+                            <h6>Reason for Refund:</h6>
+                            <p>{{ order.refund_reason }}</p>
+                            <p class="mb-0"><small>Requested on: {{ order.modified_at|date:"M d, Y H:i" }}</small></p>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="alert alert-warning mb-4">
+                            <p><strong>Important:</strong> Approving this refund will:</p>
+                            <ul>
+                                <li>Add ₹{{ order.order_total }} to the customer's wallet balance</li>
+                                <li>Update the order status to 'Refunded'</li>
+                                <li>Create a transaction record in the customer's wallet</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'admin_order_detail' order.id %}" class="btn btn-secondary">Cancel</a>
+                            <div>
+                                <button type="submit" name="action" value="reject" class="btn btn-danger me-2">Reject Refund</button>
+                                <button type="submit" name="action" value="approve" class="btn btn-success">Approve Refund</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

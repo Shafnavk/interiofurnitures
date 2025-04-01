@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="sidebar">
+                
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'my_orders' %}" class="list-group-item list-group-item-action ">
+                        <i class="fas fa-shopping-bag me-2"></i> My Orders
+                    </a>
+                    <a href="{% url 'manage_addresses' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-home me-2"></i> My Address
+                    </a>
+                    <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-edit me-2"></i> Edit Profile
+                    </a>
+                    <a href="{% url 'my_wallet' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user-edit me-2"></i> My wallet
+                    </a>
+                    <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-key me-2"></i> Change Password
+                    </a>
+                    <a href="{% url 'logout' %}" class="list-group-item list-group-item-action text-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4>My Wallet</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h2>Available Balance</h2>
+                            <h1 class="display-4">₹{{ wallet.balance }}</h1>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <p class="text-muted">Last updated: {{ wallet.updated_at|date:"M d, Y H:i" }}</p>
+                            <button class="btn btn-outline-primary" disabled>Recharge Wallet</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Transaction History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if transactions %}
+                                    {% for transaction in transactions %}
+                                        <tr>
+                                            <td>{{ transaction.created_at|date:"M d, Y" }}</td>
+                                            <td>{{ transaction.description }}</td>
+                                            <td>
+                                                {% if transaction.transaction_type == 'REFUND' %}
+                                                    <span class="badge bg-success">Refund</span>
+                                                {% elif transaction.transaction_type == 'DEBIT' %}
+                                                    <span class="badge bg-danger">Debit</span>
+                                                {% elif transaction.transaction_type == 'CREDIT' %}
+                                                    <span class="badge bg-info">Credit</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="{% if transaction.transaction_type == 'DEBIT' %}text-danger{% else %}text-success{% endif %}">
+                                                {% if transaction.transaction_type == 'REFUND' %}+{% else %}-{% endif %}₹{{ transaction.amount }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-3">No transactions found</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

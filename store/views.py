@@ -2,11 +2,16 @@ from itertools import product
 from django.shortcuts import render, get_object_or_404
 
 from carts.models import CartItem
-from .models import Product
+
 from django.db.models import Q
 from category.models import Category
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from carts.views import _cart_id
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from .models import  Product, Wishlist
 
 # Create your views here.
 def store(request, category_slug=None):
@@ -60,12 +65,18 @@ def store(request, category_slug=None):
         paged_products = paginator.page(1)
     except EmptyPage:
         paged_products = paginator.page(paginator.num_pages)
+
+    wishlist_product_ids = []
+    if request.user.is_authenticated:
+        wishlist_product_ids = Wishlist.objects.filter(user=request.user).values_list('product_id', flat=True)
+    
     
     context = {
         'products': paged_products,
         'product_count': product_count,
         'selected_min': min_price,
         'selected_max': max_price,
+        'wishlist_product_ids': wishlist_product_ids,
     }
     return render(request, 'store/store.html', context)
 
@@ -75,7 +86,19 @@ def product_detail(request, category_slug, product_slug):
         
         in_cart = CartItem.objects.filter(cart__cart_id=_cart_id(request), product=single_product).exists()
 
+        in_wishlist = False
+        wishlist_product_ids = []
+        
+        if request.user.is_authenticated:
+            in_wishlist = Wishlist.objects.filter(user=request.user, product=single_product).exists()
+            wishlist_product_ids = Wishlist.objects.filter(user=request.user).values_list('product_id', flat=True)
+        
+        # Get related products and ensure they have offer information calculated
         related_products = Product.objects.filter(category=single_product.category, is_deleted=False).exclude(id=single_product.id)[:2]
+        
+        # Get offer information
+        discount_percentage = single_product.discount_percentage
+        offer = single_product.offer
 
     except Exception as e:
         raise e
@@ -83,7 +106,11 @@ def product_detail(request, category_slug, product_slug):
     context = {
         'single_product': single_product,
         'related_products': related_products,
-        'in_cart' :  in_cart,
+        'in_cart': in_cart,
+        'in_wishlist': in_wishlist,
+        'wishlist_product_ids': wishlist_product_ids,
+        'discount_percentage': discount_percentage,
+        'offer': offer,
     }
     return render(request, 'store/product_detail.html', context)
 
@@ -108,3 +135,27 @@ def search(request):
     }
     return render(request, 'store/store.html', context)
 
+@login_required
+def add_to_wishlist(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, product=product)
+    
+    if created:
+        messages.success(request, 'Product added to wishlist')
+    else:
+        messages.info(request, 'Product is already in your wishlist')
+    return redirect(request.META.get('HTTP_REFERER', 'store'))
+
+@login_required
+def remove_from_wishlist(request, product_id):
+    Wishlist.objects.filter(user=request.user, product_id=product_id).delete()
+    messages.success(request, 'Product removed from wishlist')
+    return redirect(request.META.get('HTTP_REFERER', 'store'))
+
+@login_required
+def wishlist(request):
+    wishlist_items = Wishlist.objects.filter(user=request.user).select_related('product')
+    context = {
+        'wishlist_items': wishlist_items,
+    }
+    return render(request, 'store/wishlist.html', context)

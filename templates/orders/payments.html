@@ -1,159 +1,219 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block content %}
-<div class="container mt-5">
+
+<br>
+<br>
+<section class="section-content padding-y bg">
+  <div class="container">
+
+    <!-- ============================ COMPONENT 1 ================================= -->
+    <h4 class="text-center mb-10">Make Payment</h4>
+    <br>
+    
     <div class="row">
-        <div class="col-md-7">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Payment Method</h4>
-                </div>
-                <div class="card-body">
-                    <div class="payment-options">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
-                            <label class="form-check-label" for="cod">
-                                Cash on Delivery
-                            </label>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="radio" name="payment_method" id="razorpay" value="Razorpay">
-                            <label class="form-check-label" for="razorpay">
-                                Pay Online
-                            </label>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary w-100 mt-3" id="makePayment">Confirm Order</button>
-                </div>
-            </div>
+
+      <aside class="col-lg-8">
+        <div class="card">
+          <h5 class="card-header">Billing Address</h5>
+          <div class="card-body">
+            <p class="card-text mb-0">{{order.full_name}}</p>
+            <p class="card-text mb-0">{{order.address_line_1}} {{order.address_line_2}}</p>
+            <p class="card-text mb-0">{{order.city}}, {{order.state}}</p>
+            <p class="card-text mb-0">{{order.country}} - {{order.pincode}}</p>
+            {% if order.order_note %}
+            <b>Order Note: {{order.order_note}}</b>
+            {% endif %}
+          </div>
         </div>
 
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Order Summary</h4>
-                </div>
-                <div class="card-body">
-                    <p><strong>Order #:</strong> {{ order.order_number }}</p>
-                    <div class="order-items">
-                        {% for item in cart_items %}
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>{{ item.product.product_name }} × {{ item.quantity }}</span>
-                            <span>₹{{ item.sub_total }}</span>
-                        </div>
-                        {% endfor %}
-                        <hr>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
-                            <span>₹{{ total }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Tax (2%)</span>
-                            <span>₹{{ tax }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <strong>Grand Total</strong>
-                            <strong>₹{{ grand_total }}</strong>
-                        </div>
-                    </div>
-
-                    <div class="delivery-address mt-4">
-                        <h5>Delivery Address</h5>
-                        <p class="mb-1">{{ order.first_name }} {{ order.last_name }}</p>
-                        <p class="mb-1">{{ order.address_line_1 }}</p>
-                        {% if order.address_line_2 %}
-                        <p class="mb-1">{{ order.address_line_2 }}</p>
-                        {% endif %}
-                        <p class="mb-1">{{ order.city }}, {{ order.state }} {{ order.pincode }}</p>
-                        <p class="mb-1">Phone: {{ order.phone }}</p>
-                    </div>
-                </div>
-            </div>
+        <div class="card mt-3">
+          <h5 class="card-header">Payment Method</h5>
+          <div class="card-body">
+            <p class="card-text">Please select your preferred payment method below:</p>
+          </div>
         </div>
-    </div>
-</div>
+        
+      </aside> <!-- col.// -->
+      <aside class="col-lg-4">
 
+        <div class="card">
+          <div class="card-body">
+            <dl class="dlist-align">
+              <dt>Total price:</dt>
+              <dd class="text-right">Rs. {{total}}</dd>
+            </dl>
+            <dl class="dlist-align">
+              <dt>Tax:</dt>
+              <dd class="text-right">Rs. {{tax}}</dd>
+            </dl>
+            <dl class="dlist-align">
+              <dt>Coupon Discount:</dt>
+              {% if discount_amount > 0 %}
+              <dd class="text-right">Rs. {{ discount_amount }}</dd>
+              {% else %}
+              <dd class="text-right">Rs. 0</dd>
+              {% endif %}
+            </dl>
+            <dl class="dlist-align">
+              <dt>Grand Total:</dt>
+              <dd class="text-right text-dark b"><strong>Rs. {{ grand_total }}</strong></dd>
+            </dl>
+            <hr>
+            <p class="text-center mb-3">
+              <img src="{% static './image/misc/payments.png' %}" height="26" alt="Payment methods">
+            </p>
+           
+            <div id="paypal-button-container">
+              <!-- PayPal button will load here -->
+            </div>
+            
+            <!-- Wallet Payment Option -->
+            <h5 class="card-header text-center mt-3">OR</h5>
+            <button id="wallet-payment-btn" class="btn btn-primary btn-block mt-3 mb-3">Pay with Wallet</button>
+            <div id="wallet-payment-message" class="text-center"></div>
+            
+            <h5 class="card-header text-center">OR</h5>
+            <br>
+            <a href="{% url 'confirm_cod' order.order_number %}" class="btn btn-black btn-block mb-3"> Cash On Delivery</a>
+            
+          </div> <!-- card-body.// -->
+        </div> <!-- card.// -->
+
+      </aside> <!-- col.// -->
+
+    </div> <!-- row.// -->
+
+    <!-- ============================ COMPONENT 1 END .// ================================= -->
+
+  </div> <!-- container .//  -->
+</section>
+
+<!-- Add this script after including the PayPal SDK -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const makePaymentBtn = document.getElementById('makePayment');
-    const paymentMethods = document.getElementsByName('payment_method');
-
-    makePaymentBtn.addEventListener('click', function() {
-        let selectedMethod;
-        for (const method of paymentMethods) {
-            if (method.checked) {
-                selectedMethod = method.value;
-                break;
-            }
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
         }
+      }
+    }
+    return cookieValue;
+  }
 
-        // Send payment data to server
-        fetch('{% url "payments" %}', {
-            method: 'POST',
+  // Use grand_total instead of final_total
+  var amount = "{{ grand_total }}";
+  var url = "{% url 'payments' %}";
+  var csrftoken = getCookie('csrftoken');
+  var orderID = "{{ order.order_number }}";
+  var payment_method = 'PayPal';
+  var redirect_url = "{% url 'order_complete' %}";
+  
+  paypal.Buttons({
+    style: {
+      label: 'checkout',  // checkout | credit | pay | buynow | generic
+      size: 'responsive', // small | medium | large | responsive
+      shape: 'rect',      // pill | rect
+      color: 'blue'       // gold | blue | silver | black
+    },
+
+    createOrder: function(data, actions) {
+      // This function sets up the details of the transaction
+      return actions.order.create({
+        purchase_units: [{
+          amount: {
+            value: amount // Set the transaction amount here
+          }
+        }]
+      });
+    },
+    
+    onApprove: function(data, actions) {
+      // This function captures the transaction when it is approved
+      return actions.order.capture().then(function(details) {
+        // Show processing message
+        document.getElementById('paypal-button-container').innerHTML = '<div class="alert alert-info text-center">Processing your payment... Please wait.</div>';
+        
+        sendData();
+        function sendData(){
+          fetch(url, {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+              "Content-type": "application/json",
+              "X-CSRFToken": csrftoken,
             },
             body: JSON.stringify({
-                payment_method: selectedMethod,
-                order_number: '{{ order.order_number }}'
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
-            } else {
-                // Redirect to order complete page
-                window.location.href = `/orders/order_complete?order_number=${data.order_number}&payment_method=${data.payment_method}`;
+              order_number: orderID,
+              transID: details.id,
+              payment_method: payment_method,
+              payment_status: details.status,
+            }),
+          })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
             }
-        })
-        .catch(error => {
+            return response.json();
+          })
+          .then((data) => {
+            window.location.href = redirect_url + '?order_number=' + data.order_number + '&payment_id=' + data.transaction_id;
+          })
+          .catch(error => {
             console.error('Error:', error);
-            alert('Something went wrong. Please try again.');
+            document.getElementById('paypal-button-container').innerHTML = 
+              '<div class="alert alert-danger">There was a problem processing your payment. Please try again or contact support.</div>';
+          });
+        }
+      });
+    },
+    
+    onError: function(err) {
+      console.error('PayPal error:', err);
+      document.getElementById('paypal-button-container').innerHTML = 
+        '<div class="alert alert-danger">There was a problem with PayPal. Please try again later.</div>';
+    }
+  }).render('#paypal-button-container');
+
+  // Wallet Payment Processing
+  document.getElementById('wallet-payment-btn').addEventListener('click', function() {
+    // Show processing message
+    document.getElementById('wallet-payment-message').innerHTML = '<div class="alert alert-info text-center">Processing wallet payment... Please wait.</div>';
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('order_number', orderID);
+    formData.append('csrfmiddlewaretoken', csrftoken);
+    
+    // Send request to wallet payment endpoint
+    fetch("{% url 'wallet_payment' %}", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "X-CSRFToken": csrftoken,
+      },
+    })
+    .then((response) => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.error || 'Payment failed');
         });
+      }
+      return response.json();
+    })
+    .then((data) => {
+      window.location.href = redirect_url + '?order_number=' + data.order_number + '&payment_method=Wallet';
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      document.getElementById('wallet-payment-message').innerHTML = 
+        '<div class="alert alert-danger">' + error.message + '</div>';
     });
-});
+  });
 </script>
 
-<style>
-.payment-options {
-    padding: 20px 0;
-}
-
-.payment-options .form-check {
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    transition: all 0.3s ease;
-}
-
-.payment-options .form-check:hover {
-    border-color: #3b5d50;
-    background-color: #f8f9fa;
-}
-
-.payment-options .form-check-input:checked + .form-check-label {
-    color: #3b5d50;
-    font-weight: 600;
-}
-
-.delivery-address {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.delivery-address h5 {
-    color: #3b5d50;
-    margin-bottom: 15px;
-}
-
-.delivery-address p {
-    font-size: 14px;
-    color: #6c757d;
-}
-</style>
-{% endblock %} 
+{% endblock content %}

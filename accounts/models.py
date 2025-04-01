@@ -101,3 +101,31 @@ class Address(models.Model):
         verbose_name_plural = 'Addresses'
         ordering = ['-is_default', '-created_at']
    
+class Wallet(models.Model):
+    user = models.OneToOneField(Account, on_delete=models.CASCADE, related_name='wallet')
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.email}'s wallet (₹{self.balance})"
+
+class WalletTransaction(models.Model):
+    TRANSACTION_TYPES = (
+        ('REFUND', 'Order Refund'),
+        ('DEBIT', 'Purchase'),
+        ('CREDIT', 'Wallet Recharge'),
+    )
+    
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    description = models.CharField(max_length=255)
+    order = models.ForeignKey('orders.Order', on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.transaction_type}: ₹{self.amount} on {self.created_at.strftime('%Y-%m-%d')}"
+    
+    class Meta:
+        ordering = ['-created_at']

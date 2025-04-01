@@ -21,6 +21,9 @@
                     <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-user-edit me-2"></i> Edit Profile
                     </a>
+                    <a href="{% url 'my_wallet' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-edit me-2"></i> My wallet
+                    </a>
                     <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-key me-2"></i> Change Password
                     </a>
@@ -74,14 +77,20 @@
                                     <td>Rs. {{ order.order_total }}</td>
                                     <td>
                                         {% if order.status == 'New' %}
-                                            <span class="badge bg-info">{{ order.status }}</span>
-                                        {% elif order.status == 'Accepted' %}
-                                            <span class="badge bg-primary">{{ order.status }}</span>
-                                        {% elif order.status == 'Completed' %}
-                                            <span class="badge bg-success">{{ order.status }}</span>
-                                        {% elif order.status == 'Cancelled' %}
-                                            <span class="badge bg-danger">{{ order.status }}</span>
-                                        {% endif %}
+        <span class="badge bg-info text-white">New</span>
+    {% elif order.status == 'Cancelled' %}
+        <span class="badge bg-danger text-white">Cancelled</span>
+    {% elif order.status == 'Pending' %}
+        <span class="badge bg-warning text-dark">Pending</span>
+    {% elif order.status == 'Processing' %}
+        <span class="badge bg-primary text-white">Processing</span>
+    {% elif order.status == 'Shipped' %}
+        <span class="badge bg-secondary text-white">Shipped</span>
+    {% elif order.status == 'Delivered' %}
+        <span class="badge bg-success text-white">Delivered</span>
+    {% else %}
+        {{ order.status }}
+    {% endif %}
                                     </td>
                                     <td>
                                         <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>

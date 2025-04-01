@@ -21,6 +21,9 @@
                     <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-user-edit me-2"></i> Edit Profile
                     </a>
+                    <a href="{% url 'my_wallet' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-edit me-2"></i> My wallet
+                    </a>
                     <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-key me-2"></i> Change Password
                     </a>
@@ -37,9 +40,9 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Order #{{ order.order_number }}</h5>
-                        <span class="badge {% if order.status == 'New' %}bg-info{% elif order.status == 'Accepted' %}bg-primary{% elif order.status == 'Completed' %}bg-success{% elif order.status == 'Cancelled' %}bg-danger{% endif %}">
-                            {{ order.status }}
-                        </span>
+                        <div class="order-status">
+                            <span class="badge bg-secondary text-white">{{order.status}}</span>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -102,15 +105,57 @@
                     </div>
 
                     <div class="text-end mt-4">
-                        <a href="" class="btn btn-secondary">Track Order</a>
-                        {% if order.status == 'New' %}
-                        <a href="{% url 'cancel_order' order.id %}" class="btn btn-danger" 
-                           onclick="return confirm('Are you sure you want to cancel this order?')">Cancel Order</a>
+                        {% if order.status == 'Shipped' or order.status == 'Completed' %}
+                            <a href="{% url 'track_order' order.id %}" class="btn btn-primary me-2">Track Order</a>
                         {% endif %}
+                        
+                        {% if order.status == 'Pending' or order.status == 'Processing' or order.status == 'New' %}
+                            <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+                                <i class="fas fa-times-circle me-2"></i>Cancel Order
+                            </button>
+                        {% endif %}
+
+                        {% if order.status == 'Delivered' or order.status == 'Shipped' %}
+                            {% if order.refund_status == 'Not Requested' %}
+                                <a href="{% url 'request_refund' order.id %}" class="btn btn-warning btn-sm">Return Order</a>
+                            {% elif order.refund_status == 'Pending' %}
+                                <span class="badge bg-info">Refund Requested</span>
+                            {% elif order.refund_status == 'Approved' or order.refund_status == 'Completed' %}
+                                <span class="badge bg-success">Refund Approved</span>
+                            {% elif order.refund_status == 'Rejected' %}
+                                <span class="badge bg-danger">Refund Rejected</span>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <a href="{% url 'adminn:download_invoice' order.id %}" class="btn btn-success">
+                            <i class="fas fa-file-invoice me-2"></i>Download Invoice
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+
+<!-- Cancel Order Confirmation Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelOrderModalLabel">Confirm Order Cancellation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to cancel this order? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <form action="{% url 'cancel_order' order.id %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Confirm Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">{{ title }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.code.id_for_label }}">Coupon Code</label>
+                            {{ form.code }}
+                            {% if form.code.errors %}
+                                <div class="text-danger">{{ form.code.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Enter a unique code for this coupon</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.discount_type.id_for_label }}">Discount Type</label>
+                            {{ form.discount_type }}
+                            {% if form.discount_type.errors %}
+                                <div class="text-danger">{{ form.discount_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.discount_value.id_for_label }}">Discount Value</label>
+                            {{ form.discount_value }}
+                            {% if form.discount_value.errors %}
+                                <div class="text-danger">{{ form.discount_value.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.minimum_purchase.id_for_label }}">Minimum Purchase</label>
+                            {{ form.minimum_purchase }}
+                            {% if form.minimum_purchase.errors %}
+                                <div class="text-danger">{{ form.minimum_purchase.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.valid_from.id_for_label }}">Valid From</label>
+                            <div class="input-group">
+                                {{ form.valid_from }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                </div>
+                            </div>
+                            {% if form.valid_from.errors %}
+                                <div class="text-danger">{{ form.valid_from.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.valid_to.id_for_label }}">Valid To</label>
+                            <div class="input-group">
+                                {{ form.valid_to }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                </div>
+                            </div>
+                            {% if form.valid_to.errors %}
+                                <div class="text-danger">{{ form.valid_to.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.max_usage.id_for_label }}">Maximum Usage</label>
+                            {{ form.max_usage }}
+                            {% if form.max_usage.errors %}
+                                <div class="text-danger">{{ form.max_usage.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                {{ form.is_active }}
+                                <label for="{{ form.is_active.id_for_label }}" class="custom-control-label">Active</label>
+                            </div>
+                            {% if form.is_active.errors %}
+                                <div class="text-danger">{{ form.is_active.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-{% if coupon %}edit{% else %}plus{% endif %}"></i>
+                        {% if coupon %}Update{% else %}Create{% endif %} Coupon
+                    </button>
+                    <a href="{% url 'adminn:admin_coupon_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form classes for better styling
+    const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], select');
+    inputs.forEach(input => {
+        if (!input.classList.contains('custom-control-input')) {
+            input.classList.add('form-control');
+        }
+    });
+    
+    // Make sure checkbox has the right classes
+    const checkbox = document.querySelector('input[type="checkbox"]');
+    if (checkbox) {
+        checkbox.classList.add('custom-control-input');
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

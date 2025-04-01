@@ -15,3 +15,7 @@ def subtract(value, arg):
         return float(value) - float(arg)
     except (ValueError, TypeError):
         return 0 
+    
+@register.filter
+def sub(value, arg):
+    return value - arg

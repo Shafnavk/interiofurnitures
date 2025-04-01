@@ -286,7 +286,7 @@
                 </div>
               </td>
                                 <td>
-                                    <div class="product-price">₹{{ cart_item.product.price }}</div>
+                                    <div class="product-price">{{ cart_item.product.get_discounted_price }}</div>
                                 </td>
                                 <td>
                                     <div class="quantity-controls">
@@ -312,7 +312,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="product-price">₹{{ cart_item.sub_total }}</div>
+                                    <div class="product-price">₹<div class="product-price">{{ cart_item.product.get_discounted_price }}</div></div>
                                 </td>
                                 <td>
                                     <form method="post" action="{% url 'remove_cart_item' cart_item.id %}" style="display: inline;">

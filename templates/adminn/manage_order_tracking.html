@@ -1,0 +1,171 @@
+<!-- adminn/templates/adminn/manage_order_tracking.html -->
+{% extends 'adminn/adminbase.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Manage Order Tracking - Order #{{ order.order_number }}</h1>
+        <a href="{% url 'adminn:admin_orders' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back to Orders
+        </a>
+    </div>
+
+    <!-- Main Tracking Information Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Order Tracking Information</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'adminn:manage_order_tracking' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_tracking_info">
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="tracking_number">Tracking Number</label>
+                            <input type="text" class="form-control" id="tracking_number" name="tracking_number" 
+                                   value="{{ order.tracking_number|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="carrier">Carrier/Shipping Company</label>
+                            <input type="text" class="form-control" id="carrier" name="carrier" 
+                                   value="{{ order.carrier|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="estimated_delivery_date">Estimated Delivery Date</label>
+                            <input type="date" class="form-control" id="estimated_delivery_date" 
+                                   name="estimated_delivery_date" 
+                                   value="{% if order.estimated_delivery_date %}{{ order.estimated_delivery_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Current Order Status: <span class="badge badge-{{ order.status|lower }}">{{ order.status }}</span></label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">Update Tracking Information</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Tracking Update Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Add Tracking Update</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'adminn:manage_order_tracking' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_tracking_update">
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="status">Status</label>
+                            <select class="form-control" id="status" name="status" required>
+                                <option value="">Select Status</option>
+                                {% for status_value, status_label in status_choices %}
+                                <option value="{{ status_value }}">{{ status_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="location">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   placeholder="e.g., Warehouse, Distribution Center, City Name">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="description">Description (Optional)</label>
+                            <input type="text" class="form-control" id="description" name="description" 
+                                   placeholder="Additional details about this update">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-success">Add Update</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tracking History Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Tracking History</h6>
+        </div>
+        <div class="card-body">
+            {% if tracking_updates %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="trackingTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th>Location</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for update in tracking_updates %}
+                            <tr>
+                                <td>{{ update.timestamp|date:"M d, Y H:i:s" }}</td>
+                                <td><span class="badge badge-{{ update.status|slugify }}">{{ update.status }}</span></td>
+                                <td>{{ update.location|default:"-" }}</td>
+                                <td>{{ update.description|default:"-" }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'adminn:manage_order_tracking' order.id %}" 
+                                          onsubmit="return confirm('Are you sure you want to delete this update?')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_tracking_update">
+                                        <input type="hidden" name="update_id" value="{{ update.id }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted">No tracking updates available for this order yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#trackingTable').DataTable({
+            order: [[0, 'desc']]
+        });
+    });
+</script>
+{% endblock %}

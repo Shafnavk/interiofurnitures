@@ -337,6 +337,52 @@
         background-color: #3b4f4a;
     }
 
+    /* Offer badge styles */
+    .offer-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: #e53935;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: 600;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .original-price {
+        text-decoration: line-through;
+        color: #999;
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+
+    .discount-price {
+        color: #e53935;
+        font-weight: bold;
+    }
+
+    .offer-details {
+        margin: 1rem 0;
+        padding: 0.8rem;
+        background-color: #fff8e1;
+        border-left: 4px solid #ffc107;
+        border-radius: 4px;
+        font-size: 0.95rem;
+    }
+
+    .offer-name {
+        font-weight: 600;
+        color: #e53935;
+    }
+
+    .offer-validity {
+        color: #666;
+        font-size: 0.85rem;
+        margin-top: 0.3rem;
+    }
+
     @media (max-width: 768px) {
         .product-grid {
             grid-template-columns: 1fr;
@@ -356,13 +402,16 @@
     <div class="breadcrumb">
         <a href="{% url 'store' %}">Store</a>
         <span>/</span>
-        <a href="{{ single_product.category.get_url }}">{{ single_product.category.category_name }}</a>
+        <a href="{% url 'products_by_category' single_product.category.slug %}">{{ single_product.category.category_name }}</a>
         <span>/</span>
         {{ single_product.product_name }}
     </div>
 
     <div class="product-grid">
         <div class="product-images">
+            {% if discount_percentage > 0 %}
+            <div class="offer-badge">{{ discount_percentage }}% OFF</div>
+            {% endif %}
             <div class="zoom-container">
                 {% if single_product.images.first %}
                     <img src="{{ single_product.images.first.image.url }}" alt="{{ single_product.product_name }}" class="main-image" id="main-image">
@@ -386,6 +435,14 @@
             {% else %}
                 <div class="stock-status out-of-stock">Out of Stock</div>
             {% endif %}
+
+            {% if discount_percentage > 0 %}
+            <div class="offer-details">
+                <div class="offer-name">{{ offer.name }}</div>
+                
+                <div class="offer-validity">Valid until: {{ offer.end_date|date:"F d, Y" }}</div>
+            </div>
+            {% endif %}
         
             <form method="POST" action="{% url 'add_cart' single_product.id %}">
                 {% csrf_token %}
@@ -401,13 +458,21 @@
                 </div>
 
                 <div class="price-container">
+                    {% if discount_percentage > 0 %}
+                    <div id="base-price" class="price">
+                        <span class="original-price">₹{{ single_product.price }}</span>
+                        <span class="currency">₹</span>
+                        <span class="amount discount-price">{{ single_product.get_discounted_price }}</span>
+                    </div>
+                    {% else %}
                     <div id="base-price" class="price">
                         <span class="currency">₹</span>
                         <span class="amount">{{ single_product.price }}</span>
                     </div>
+                    {% endif %}
                     <div id="total-price" class="total-price"></div>
                 </div>
-
+                
                 {% if single_product.stock > 0 %}
                     {% if in_cart %}
                         <a href="{% url 'cart' %}" class="view-cart">
@@ -421,7 +486,20 @@
                         </button>
                     {% endif %}
                 {% endif %}
+                {% if user.is_authenticated %}
+                    {% if in_wishlist %}
+                        <a href="{% url 'remove_from_wishlist' single_product.id %}" class="btn btn-secondary mt-2 w-100">
+                            <i class="fa fa-heart"></i> Remove from Wishlist
+                        </a>
+                    {% else %}
+                        <a href="{% url 'add_to_wishlist' single_product.id %}" class="btn btn-outline-secondary mt-2 w-100">
+                            <i class="fa fa-heart-o"></i> Add to Wishlist
+                        </a>
+                    {% endif %}
+                {% endif %}
+                
             </form>
+            
 
             <div class="product-tabs">
                 <div class="tab-buttons">
@@ -449,6 +527,9 @@
             {% for product in related_products %}
             <div class="product-card">
                 <a href="{{ product.get_url }}">
+                    {% if product.discount_percentage > 0 %}
+                    <div class="offer-badge">{{ product.discount_percentage }}% OFF</div>
+                    {% endif %}
                     {% if product.images.first %}
                     <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}">
                     {% else %}
@@ -456,7 +537,11 @@
                     {% endif %}
                     <h3>{{ product.product_name }}</h3>
                     <span class="float-right">4.5/5 <i class="fa fa-star text-warning"></i></span>
-                    <p>Rs. {{ product.price }}</p>
+                    {% if product.discount_percentage > 0 %}
+                    <p><span class="original-price">₹{{ product.price }}</span> <span class="discount-price">₹{{ product.get_discounted_price }}</span></p>
+                    {% else %}
+                    <p>₹{{ product.price }}</p>
+                    {% endif %}
                     <a href="{{ product.get_url }}" class="btn">View Details</a>
                 </a>
             </div>
@@ -494,14 +579,18 @@ function openTab(evt, tabName) {
 }
 
 function updateTotalPrice(quantity) {
+    {% if discount_percentage > 0 %}
+    const basePrice = "{{ single_product.get_discounted_price }}";
+    {% else %}
     const basePrice = "{{ single_product.price }}";
+    {% endif %}
     const total = parseFloat(basePrice) * parseInt(quantity);
     const basePriceElement = document.getElementById('base-price');
     const totalPriceElement = document.getElementById('total-price');
     
     if (parseInt(quantity) > 1) {
         basePriceElement.style.display = 'none';
-        totalPriceElement.innerHTML = `<span class="currency">₹</span><span class="amount">${total}</span>`;
+        totalPriceElement.innerHTML = `<span class="currency">₹</span><span class="amount">$${total.toFixed(2)}</span>`;
         totalPriceElement.style.display = 'flex';
         totalPriceElement.style.alignItems = 'center';
         totalPriceElement.style.justifyContent = 'center';

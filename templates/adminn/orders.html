@@ -5,7 +5,6 @@
 <div class="container-fluid px-4">
     <h1 class="mt-4">Order Management</h1>
     
-
     <div class="card mb-4">
         <div class="card-header">
             <i class="fas fa-table me-1"></i>
@@ -33,50 +32,32 @@
                             <span class="badge {% if order.status == 'Delivered' %}bg-success
                                            {% elif order.status == 'Cancelled' %}bg-danger
                                            {% elif order.status == 'Processing' %}bg-primary
+                                           {% elif order.status == 'Shipped' %}bg-info
                                            {% else %}bg-warning{% endif %}">
                                 {{ order.status }}
                             </span>
+                            {% if order.refund_status %}
+                            <span class="badge {% if order.refund_status == 'Completed' %}bg-success
+                                           {% elif order.refund_status == 'Rejected' %}bg-danger
+                                           {% elif order.refund_status == 'Pending' %}bg-warning
+                                           {% else %}bg-secondary{% endif %}">
+                                Refund: {{ order.refund_status }}
+                            </span>
+                            {% endif %}
                         </td>
                         <td>{{ order.created_at|date:"M d, Y" }}</td>
                         <td>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ order.id }}">
                                     Update Status
                                 </button>
-                                <a href="{% url 'adminn:download_invoice' order.id %}" class="btn btn-sm btn-success">
-                                    <i class="fas fa-download"></i> Invoice
-                                </a>
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#refundModal{{ order.id }}">
+                                    <i class="fas fa-undo"></i> Refund
+                                </button>
+                                
                                 <a href="{% url 'adminn:send_invoice' order.id %}" class="btn btn-sm btn-info">
                                     <i class="fas fa-envelope"></i> Email Invoice
                                 </a>
-                            </div>
-                            
-                            <!-- Modal -->
-                            <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <form action="{% url 'adminn:update_order_status' order.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">Update Order #{{ order.id }} Status</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <select name="status" class="form-select">
-                                                    {% for status_code, status_name in order.STATUS %}
-                                                    <option value="{{ status_code }}" {% if order.status == status_code %}selected{% endif %}>
-                                                        {{ status_name }}
-                                                    </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                <button type="submit" class="btn btn-primary">Update Status</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
                             </div>
                         </td>
                     </tr>
@@ -86,12 +67,176 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- Modals - Put outside the table to avoid nesting issues -->
+{% for order in orders %}
+<!-- Update Status Modal -->
+<div class="modal fade" id="updateStatusModal{{ order.id }}" tabindex="-1" aria-labelledby="updateStatusModalLabel{{ order.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateStatusModalLabel{{ order.id }}">Update Order Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'adminn:update_order_status' order.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Current Status: <strong>{{ order.status }}</strong></label>
+                        <select name="status" class="form-control mt-2" id="statusSelect{{ order.id }}">
+                            {% if order.status == 'New' %}
+                                <option value="Pending" selected>Pending</option>
+                                <option value="Processing">Processing</option>
+                                <option value="Cancelled">Cancelled</option>
+                            {% elif order.status == 'Processing' %}
+                                <option value="Processing" selected>Processing</option>
+                                <option value="Shipped">Shipped</option>
+                                <option value="Cancelled">Cancelled</option>
+                            {% elif order.status == 'Shipped' %}
+                                <option value="Shipped" selected>Shipped</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                            {% elif order.status == 'Delivered' %}
+                                <option value="Delivered" selected>Delivered</option>
+                            {% elif order.status == 'Cancelled' %}
+                                <option value="Cancelled" selected>Cancelled</option>
+                                <option value="Pending">Pending</option>
+                            {% else %}
+                                {% for status_code, status_name in order.STATUS %}
+                                <option value="{{ status_code }}" {% if order.status == status_code %}selected{% endif %}>
+                                    {{ status_name }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        
+                        <div id="cancelWarning{{ order.id }}" class="mt-3 alert alert-warning" style="display: none;">
+                            <p><i class="fas fa-exclamation-triangle"></i> <strong>Warning:</strong> Cancelling this order will:</p>
+                            <ul>
+                                <li>Return all products to inventory</li>
+                                {% if order.coupon %}
+                                <li>Restore the coupon "{{ order.coupon.code }}" for future use</li>
+                                {% endif %}
+                                <li>The customer will be notified of cancellation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Refund Modal -->
+<div class="modal fade" id="refundModal{{ order.id }}" tabindex="-1" aria-labelledby="refundModalLabel{{ order.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="refundModalLabel{{ order.id }}">Process Refund - Order #{{ order.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'adminn:process_refund' order.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Order Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Customer:</strong> {{ order.user.email }}</p>
+                            <p><strong>Order Total:</strong> ₹{{ order.order_total }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge {% if order.status == 'Delivered' %}bg-success
+                                               {% elif order.status == 'Cancelled' %}bg-danger
+                                               {% elif order.status == 'Processing' %}bg-primary
+                                               {% elif order.status == 'Shipped' %}bg-info
+                                               {% else %}bg-warning{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                            </p>
+                            <p><strong>Refund Status:</strong> 
+                                <span class="badge {% if order.refund_status == 'Completed' %}bg-success
+                                               {% elif order.refund_status == 'Rejected' %}bg-danger
+                                               {% elif order.refund_status == 'Pending' %}bg-warning
+                                               {% else %}bg-secondary{% endif %}">
+                                    {{ order.refund_status|default:'Not Requested' }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if order.refund_status == 'Pending' %}
+                    <div class="alert alert-info">
+                        <p><i class="fas fa-info-circle"></i> <strong>Note:</strong> Approving this refund will:</p>
+                        <ul>
+                            <li>Add ₹{{ order.order_total }} to customer's wallet</li>
+                            <li>Change order status to "Refunded"</li>
+                            <li>The customer will be notified of the refund</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" name="action" value="approve" class="btn btn-success">
+                            <i class="fas fa-check"></i> Approve Refund
+                        </button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">
+                            <i class="fas fa-times"></i> Reject Refund
+                        </button>
+                    </div>
+                    {% elif order.refund_status == 'Completed' %}
+                    <div class="alert alert-success">
+                        <p><i class="fas fa-check-circle"></i> <strong>Refund has been processed</strong></p>
+                        <p>Refund of ₹{{ order.order_total }} was added to customer's wallet on {{ order.refunded_at|date:"M d, Y" }}</p>
+                    </div>
+                    {% elif order.refund_status == 'Rejected' %}
+                    <div class="alert alert-danger">
+                        <p><i class="fas fa-ban"></i> <strong>Refund request was rejected</strong></p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <p><i class="fas fa-exclamation-triangle"></i> <strong>No refund has been requested for this order</strong></p>
+                        <p>If you would like to initiate a refund for this order, you can use the button below:</p>
+                        <button type="submit" name="action" value="initiate" class="btn btn-warning">
+                            <i class="fas fa-undo"></i> Initiate Refund Process
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
 <script>
-    $(document).ready(function() {
-        $('#ordersTable').DataTable();
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusSelect = document.getElementById('statusSelect{{ order.id }}');
+        const cancelWarning = document.getElementById('cancelWarning{{ order.id }}');
+        
+        if (statusSelect && cancelWarning) {
+            // Check initial state
+            if (statusSelect.value === 'Cancelled') {
+                cancelWarning.style.display = 'block';
+            }
+            
+            // Add event listener
+            statusSelect.addEventListener('change', function() {
+                if (this.value === 'Cancelled') {
+                    cancelWarning.style.display = 'block';
+                } else {
+                    cancelWarning.style.display = 'none';
+                }
+            });
+        }
     });
 </script>
+{% endfor %}
 {% endblock %}

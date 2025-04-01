@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4>Request Refund for Order #{{ order.order_number }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="order-summary mb-4">
+                        <h5>Order Summary</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Order Date:</strong> {{ order.created_at|date:"M d, Y" }}</p>
+                                <p><strong>Order Status:</strong> {{ order.status }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Order Total:</strong> ₹{{ order.order_total }}</p>
+                                <p><strong>Payment Method:</strong> {{ order.payment.payment_method }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="refund_reason">Reason for Refund</label>
+                            <textarea class="form-control" id="refund_reason" name="refund_reason" rows="4" required></textarea>
+                            <small class="form-text text-muted">Please provide detailed information about why you're requesting a refund.</small>
+                        </div>
+                        
+                        <div class="alert alert-info mb-3">
+                            <p><strong>Refund Policy:</strong></p>
+                            <ul>
+                                <li>Approved refunds will be credited to your wallet balance</li>
+                                <li>Processing may take 2-3 business days</li>
+                                <li>Our team will review your request and may contact you for more information</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'order_detail' order.id %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Submit Refund Request</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
