@@ -11,7 +11,6 @@ urlpatterns = [
     path('edit_profile/', views.edit_profile, name='edit_profile'),
     path('change_password/', views.change_password, name='change_password'),
     path('order_detail/<int:order_id>/', views.order_detail, name='order_detail'),
-    path('track_order/<int:order_id>/', views.track_order, name='track_order'),
     path('cancel_order/<int:order_id>/', views.cancel_order, name='cancel_order'),
     path('login/google/', views.login_with_google, name='google_login'),
     path('login/google/callback/', views.google_callback, name='google_callback'),

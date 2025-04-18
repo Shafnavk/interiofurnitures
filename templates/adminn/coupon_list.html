@@ -42,10 +42,10 @@
                                 {% if coupon.discount_type == 'percentage' %}
                                     {{ coupon.discount_value }}%
                                 {% else %}
-                                    Rs:{{ coupon.discount_value }}
+                                    ${{ coupon.discount_value }}
                                 {% endif %}
                             </td>
-                            <td>Rs:{{ coupon.minimum_purchase }}</td>
+                            <td>${{ coupon.minimum_purchase }}</td>
                             <td>
                                 {{ coupon.valid_from|date:"M d, Y" }} to 
                                 {{ coupon.valid_to|date:"M d, Y" }}

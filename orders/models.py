@@ -3,8 +3,10 @@ from accounts.models import Account
 from store.models import Product    
 from django.contrib.auth.models import User  # Use your existing user model
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.utils import timezone
+
 from django.conf import settings 
+from decimal import Decimal
+from django.utils import timezone
 
 class Payment(models.Model):
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
@@ -36,25 +38,31 @@ class Coupon(models.Model):
         return self.code
 
     def is_valid(self, total_amount):
+        
         now = timezone.now()
-        if (self.is_active and 
-            self.valid_from <= now <= self.valid_to and 
-            self.times_used < self.max_usage and 
-            total_amount >= self.minimum_purchase):
-            return True
-        return False
+        total = Decimal(str(total_amount))
+        
+        if not self.is_active:
+            return False
+        if not (self.valid_from <= now <= self.valid_to):
+            return False
+        
+        if self.times_used >= self.max_usage:
+            return False
+        
+        if total < self.minimum_purchase:
+            return False
+        
+        return True
 
     def get_discount_amount(self, total_amount):
-        from decimal import Decimal
         total = Decimal(str(total_amount))  
         
         if self.discount_type == 'percentage':
             discount = (self.discount_value / Decimal('100')) * total
-            print(f"Percentage discount: {discount}")
             return discount
         else: 
             discount = min(self.discount_value, total) 
-            print(f"Fixed discount: {discount}")
             return discount
 
 class CouponUsage(models.Model):
@@ -129,7 +137,9 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     coupon = models.ForeignKey(Coupon, null=True, blank=True, on_delete=models.SET_NULL)
-    discount_amount = models.FloatField() 
+    discount_amount = models.FloatField(default=0)  
+    product_discount = models.FloatField(default=0)
+    delivery_charge = models.FloatField(default=0) 
     estimated_delivery_date = models.DateField(null=True, blank=True)
     tracking_number = models.CharField(max_length=50, blank=True, null=True)
     carrier = models.CharField(max_length=50, blank=True, null=True)
@@ -153,6 +163,8 @@ class Order(models.Model):
 
     def __str__(self):
         return self.order_number
+    def get_total_with_delivery(self):
+        return self.order_total + self.delivery_charge
 
 class OrderProduct(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
@@ -160,6 +172,7 @@ class OrderProduct(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField()
     product_price = models.FloatField()
+    original_price = models.FloatField(default=0)
     ordered = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -167,3 +180,44 @@ class OrderProduct(models.Model):
     def __str__(self):
         return self.product.product_name 
 
+
+
+class DeliveryCharge(models.Model):
+    CHARGE_TYPE_CHOICES = (
+        ('fixed', 'Fixed Charge'),
+        ('location', 'Location Based')
+    )
+    
+    name = models.CharField(max_length=100)
+    charge_type = models.CharField(max_length=20, choices=CHARGE_TYPE_CHOICES, default='fixed')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    
+    country = models.CharField(max_length=50, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    
+    free_shipping_threshold = models.DecimalField(max_digits=10, decimal_places=2, default=0, 
+                                                help_text="Order amount above which delivery is free")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return self.name
+    
+class ReturnItem(models.Model):
+    order_product = models.ForeignKey(OrderProduct, on_delete=models.CASCADE)
+    return_quantity = models.IntegerField(default=1)
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=(
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+        ('Completed', 'Completed'),
+    ), default='Pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Return for {self.order_product.product.product_name} from order {self.order_product.order.order_number}"

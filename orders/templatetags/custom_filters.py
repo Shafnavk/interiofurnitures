@@ -2,13 +2,6 @@ from django import template
 
 register = template.Library()
 
-
-
-
-@register.filter
-def get_range(value):
-    return range(value)
-
 @register.filter
 def multiply(value, arg):
     try:
@@ -26,3 +19,4 @@ def subtract(value, arg):
 @register.filter
 def sub(value, arg):
     return value - arg
+

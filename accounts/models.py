@@ -108,7 +108,7 @@ class Wallet(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.email}'s wallet (₹{self.balance})"
+        return f"{self.user.email}'s wallet (${self.balance})"
 
 class WalletTransaction(models.Model):
     TRANSACTION_TYPES = (
@@ -125,7 +125,8 @@ class WalletTransaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"{self.transaction_type}: ₹{self.amount} on {self.created_at.strftime('%Y-%m-%d')}"
+        return f"{self.transaction_type}: ${self.amount} on {self.created_at.strftime('%Y-%m-%d')}"
     
     class Meta:
         ordering = ['-created_at']
+

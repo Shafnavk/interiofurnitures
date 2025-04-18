@@ -54,28 +54,34 @@
                             {% for item in ordered_products %}
                             <div class="d-flex justify-content-between mb-2">
                                 <span>{{ item.product.product_name }} × {{ item.quantity }}</span>
-                                <span>Rs. {{ item.product_price }}</span>
+                                <span>$ {{ item.product_price }}</span>
                             </div>
                             {% endfor %}
                             <hr>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Subtotal</span>
-                                <span>Rs. {{ subtotal }}</span>
+                                <span>$ {{ subtotal }}</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Tax</span>
-                                <span>Rs. {{ order.tax }}</span>
+                                <span>$ {{ order.tax }}</span>
                             </div>
                             {% if order.discount_amount > 0 %}
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Discount</span>
-                                <span>- Rs. {{ order.discount_amount }}</span>
+                                <span>- $ {{ order.discount_amount }}</span>
                             </div>
                             {% endif %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Delivery Charge:</span>
+                                <span> $ {{ delivery_charge }}</span>
+                            </div>
+                            
                             <hr>
+                            
                             <div class="d-flex justify-content-between">
                                 <strong>Grand Total</strong>
-                                <strong>Rs. {{ order.order_total }}</strong>
+                                <strong>$ {{ order.order_total }}</strong>
                             </div>
                         </div>
                     </div>

@@ -312,7 +312,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="product-price">₹<div class="product-price">{{ cart_item.product.get_discounted_price }}</div></div>
+                                    <div class="product-price">$<div class="product-price">{{ cart_item.product.get_discounted_price }}</div></div>
                                 </td>
                                 <td>
                                     <form method="post" action="{% url 'remove_cart_item' cart_item.id %}" style="display: inline;">
@@ -332,15 +332,15 @@
                 <h2>Order Summary</h2>
                 <div class="summary-row">
                     <span>Subtotal</span>
-                    <span>₹{{ total }}</span>
+                    <span>${{ total }}</span>
         </div>
                 <div class="summary-row">
                     <span>Tax (2%)</span>
-                    <span>₹{{ tax }}</span>
+                    <span>${{ tax }}</span>
       </div>
                 <div class="summary-row total">
                     <span>Grand Total</span>
-                    <span>₹{{ grand_total }}</span>
+                    <span>${{ grand_total }}</span>
       </div>
                 <div class="button-group">
                     <a href="{% url 'store' %}" class="continue-shopping-btn">Continue Shopping</a>
@@ -417,12 +417,12 @@ function updateQuantity(cartItemId, action, value = null) {
             document.querySelector(`tr[data-cart-item="${cartItemId}"] .quantity-input`).value = data.quantity;
             
             // Update the item total
-            document.querySelector(`tr[data-cart-item="${cartItemId}"] .product-price:last-child`).textContent = `₹${data.sub_total}`;
+            document.querySelector(`tr[data-cart-item="${cartItemId}"] .product-price:last-child`).textContent = `$${data.sub_total}`;
             
             // Update cart totals
-            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `₹${data.total}`;
-            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `₹${data.tax}`;
-            document.querySelector('.summary-row.total span:last-child').textContent = `₹${data.grand_total}`;
+            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `$${data.total}`;
+            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `$${data.tax}`;
+            document.querySelector('.summary-row.total span:last-child').textContent = `$${data.grand_total}`;
             
             showMessage('Quantity updated successfully');
         } else {
@@ -465,9 +465,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             cartItemRow.remove();
                             
                             // Update totals
-                            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `₹${data.total}`;
-                            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `₹${data.tax}`;
-                            document.querySelector('.summary-row.total span:last-child').textContent = `₹${data.grand_total}`;
+                            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `$${data.total}`;
+                            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `$${data.tax}`;
+                            document.querySelector('.summary-row.total span:last-child').textContent = `$${data.grand_total}`;
                             
                             // Check if cart is empty
                             if (document.querySelector('.cart-table tbody').children.length === 0) {

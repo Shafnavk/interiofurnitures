@@ -42,7 +42,7 @@
                     <div class="row align-items-center">
                         <div class="col-md-6">
                             <h2>Available Balance</h2>
-                            <h1 class="display-4">₹{{ wallet.balance }}</h1>
+                            <h1 class="display-4">${{ wallet.balance }}</h1>
                         </div>
                         <div class="col-md-6 text-md-end">
                             <p class="text-muted">Last updated: {{ wallet.updated_at|date:"M d, Y H:i" }}</p>
@@ -83,7 +83,7 @@
                                                 {% endif %}
                                             </td>
                                             <td class="{% if transaction.transaction_type == 'DEBIT' %}text-danger{% else %}text-success{% endif %}">
-                                                {% if transaction.transaction_type == 'REFUND' %}+{% else %}-{% endif %}₹{{ transaction.amount }}
+                                                {% if transaction.transaction_type == 'REFUND' %}+{% else %}-{% endif %}${{ transaction.amount }}
                                             </td>
                                         </tr>
                                     {% endfor %}

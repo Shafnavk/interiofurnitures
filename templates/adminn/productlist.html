@@ -130,7 +130,7 @@ function deleteProductImage(imageId) {
                         <tr>
                             <td>{{ product.product_name }}</td>
                             <td>{{ product.description }}</td>
-                            <td>₹{{ product.price }}</td>
+                            <td>${{ product.price }}</td>
                             <td>{{ product.stock }}</td>
                             <td>
                                 {% for image in product.images.all %}
@@ -192,7 +192,7 @@ function deleteProductImage(imageId) {
                         <tr>
                             <td>{{ product.product_name }}</td>
                             <td>{{ product.category.category_name }}</td>
-                            <td>₹{{ product.price }}</td>
+                            <td>${{ product.price }}</td>
                             <td>{{ product.deleted_at|date:"M d, Y H:i" }}</td>
                             <td>
                                 <a href="{% url 'adminn:restore_product' product.id %}" class="btn btn-sm btn-success" onclick="return confirm('Are you sure you want to list this product?')">Restore</a>

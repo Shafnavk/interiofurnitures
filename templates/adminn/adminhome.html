@@ -3,7 +3,6 @@
 {% load static %}
 {% block content %}
 <style>
-    
     .custom-card-header {
         background-color: #acc7be;
         color: #0c5460;
@@ -15,15 +14,14 @@
         border: 1px solid white;
     }
     .head {
-            background-color: #acc7be;
-            color: #0c5460;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 24px;
-           
-        }
+        background-color: #acc7be;
+        color: #0c5460;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 24px;
+    }
     .custom-card {
         border: none;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -83,6 +81,33 @@
         background-color: #dc3545;
         color: #fff;
     }
+    .period-filter {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+    .top-list {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    .top-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+    }
+    .top-list li:last-child {
+        border-bottom: none;
+    }
+    .progress {
+        height: 8px;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
 </style>
 
 <div class="container mt-5">
@@ -90,8 +115,7 @@
         <div class="col-md-12">
             <div class="card custom-card">
                 <div class="card-header custom-card-header d-flex justify-content-between align-items-center">
-                    <h2 class=" head">ADMIN DASHBOARD</h2>
-                    
+                    <h2 class="head">ADMIN DASHBOARD</h2>
                 </div>
                 <div class="card-body">
                     <h6 class="mb-4">Welcome, {{ first_name }}!</h6>
@@ -142,6 +166,83 @@
                         </div>
                     </div>
                     
+                    <!-- Sales Chart with Time Period Filter -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card custom-card">
+                                <div class="card-header custom-card-header">
+                                    <h5 class="mb-0">Sales Overview</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="period-filter d-flex justify-content-end mb-3">
+                                        <form method="get" class="form-inline">
+                                            <div class="form-group mr-2">
+                                                <label for="time_period" class="mr-2">Filter:</label>
+                                                <select name="time_period" id="time_period" class="form-control form-control-sm" onchange="this.form.submit()">
+                                                    <option value="weekly" {% if time_period == 'weekly' %}selected{% endif %}>Weekly</option>
+                                                    <option value="monthly" {% if time_period == 'monthly' %}selected{% endif %}>Monthly</option>
+                                                    <option value="yearly" {% if time_period == 'yearly' %}selected{% endif %}>Yearly</option>
+                                                </select>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="chart-container">
+                                        <canvas id="salesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top 10 Best Selling Sections -->
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="card custom-card">
+                                <div class="card-header custom-card-header">
+                                    <h5 class="mb-0">Top 10 Products</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if best_selling_products %}
+                                        <ul class="top-list">
+                                            {% for product in best_selling_products %}
+                                                <li>
+                                                    <span>{{ product.product__product_name|truncatechars:20 }}</span>
+                                                    <span class="badge bg-success">{{ product.total_sold }} sold</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="text-center text-muted">No sales data available</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card custom-card">
+                                <div class="card-header custom-card-header">
+                                    <h5 class="mb-0">Top 10 Categories</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if best_selling_categories %}
+                                        <ul class="top-list">
+                                            {% for category in best_selling_categories %}
+                                                <li>
+                                                    <span>{{ category.product__category__category_name|truncatechars:20 }}</span>
+                                                    <span class="badge bg-info">{{ category.total_sold }} sold</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="text-center text-muted">No sales data available</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                    </div>
+                    
                     <div class="row mt-4">
                         <div class="col-md-6">
                             <div class="card custom-card">
@@ -150,9 +251,28 @@
                                 </div>
                                 <div class="card-body">
                                     <ul class="list-group list-group-flush">
-                                        
+                                        {% if recent_orders %}
+                                            {% for order in recent_orders %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>#{{ order.order_number|truncatechars:10 }}</strong>
+                                                        <div class="activity-time">{{ order.created_at|date:"M d, Y" }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <span class="badge 
+                                                            {% if order.status == 'New' %}status-pending
+                                                            {% elif order.status == 'Delivered' %}status-delivered
+                                                            {% elif order.status == 'Cancelled' %}status-cancelled
+                                                            {% else %}bg-secondary text-white{% endif %}">
+                                                            {{ order.status }}
+                                                        </span>
+                                                        <div class="text-end">${{ order.order_total }}</div>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        {% else %}
                                             <li class="list-group-item">No recent orders</li>
-                                        
+                                        {% endif %}
                                     </ul>
                                 </div>
                             </div>
@@ -197,7 +317,7 @@
                                                 <div class="card-body">
                                                     <i class="fas fa-rupee-sign text-muted"></i>
                                                     <h6 class="text-muted">Total Revenue</h6>
-                                                    <h3 class="mb-0">₹0</h3>
+                                                    <h3 class="mb-0">${{ total_revenue|floatformat:2 }}</h3>
                                                 </div>
                                             </div>
                                         </div>
@@ -214,4 +334,59 @@
 
 <!-- Add Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<!-- Add Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sales Chart
+    var ctx = document.getElementById('salesChart').getContext('2d');
+    var salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ labels|safe }},
+            datasets: [{
+                label: 'Sales ($)',
+                data: {{ sales_data|safe }},
+                backgroundColor: 'rgba(76, 99, 93, 0.1)',
+                borderColor: '#4A635D',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: '#4A635D',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Sales: $' + context.parsed.y;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

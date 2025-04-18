@@ -2,94 +2,204 @@
 {% load static %}
 {% block content %}
 
-<br>
-<br>
-<section class="section-content padding-y bg">
+<section class="payment-section py-5">
   <div class="container">
-
-    <!-- ============================ COMPONENT 1 ================================= -->
-    <h4 class="text-center mb-10">Make Payment</h4>
-    <br>
-    
-    <div class="row">
-
-      <aside class="col-lg-8">
-        <div class="card">
-          <h5 class="card-header">Billing Address</h5>
-          <div class="card-body">
-            <p class="card-text mb-0">{{order.full_name}}</p>
-            <p class="card-text mb-0">{{order.address_line_1}} {{order.address_line_2}}</p>
-            <p class="card-text mb-0">{{order.city}}, {{order.state}}</p>
-            <p class="card-text mb-0">{{order.country}} - {{order.pincode}}</p>
-            {% if order.order_note %}
-            <b>Order Note: {{order.order_note}}</b>
-            {% endif %}
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+   
+        <div class="text-center mb-4">
+          <h2 class="font-weight-bold">Complete Your Payment</h2>
+          <p class="text-muted">Order #{{ order.order_number }}</p>
+          <div class="progress mb-3" style="height: 6px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="d-flex justify-content-between px-3">
+            <small>Cart</small>
+            <small>Shipping</small>
+            <small class="font-weight-bold text-success">Payment</small>
+            <small>Confirmation</small>
           </div>
         </div>
 
-        <div class="card mt-3">
-          <h5 class="card-header">Payment Method</h5>
-          <div class="card-body">
-            <p class="card-text">Please select your preferred payment method below:</p>
-          </div>
-        </div>
+        <div class="row">
+       
+          <div class="col-md-7 mb-4">
         
-      </aside> <!-- col.// -->
-      <aside class="col-lg-4">
-
-        <div class="card">
-          <div class="card-body">
-            <dl class="dlist-align">
-              <dt>Total price:</dt>
-              <dd class="text-right">Rs. {{total}}</dd>
-            </dl>
-            <dl class="dlist-align">
-              <dt>Tax:</dt>
-              <dd class="text-right">Rs. {{tax}}</dd>
-            </dl>
-            <dl class="dlist-align">
-              <dt>Coupon Discount:</dt>
-              {% if discount_amount > 0 %}
-              <dd class="text-right">Rs. {{ discount_amount }}</dd>
-              {% else %}
-              <dd class="text-right">Rs. 0</dd>
-              {% endif %}
-            </dl>
-            <dl class="dlist-align">
-              <dt>Grand Total:</dt>
-              <dd class="text-right text-dark b"><strong>Rs. {{ grand_total }}</strong></dd>
-            </dl>
-            <hr>
-            <p class="text-center mb-3">
-              <img src="{% static './image/misc/payments.png' %}" height="26" alt="Payment methods">
-            </p>
-           
-            <div id="paypal-button-container">
-              <!-- PayPal button will load here -->
+            <div class="card shadow-sm border-0 rounded-lg mb-4">
+              <div class="card-header bg-light py-3">
+                <h5 class="mb-0"><i class="fa fa-map-marker-alt mr-2"></i> Billing Address</h5>
+              </div>
+              <div class="card-body">
+                <div class="addresss-details">
+                  <p class="font-weight-bold mb-1">{{order.full_name}}</p>
+                  <p class="mb-1">{{order.address_line_1}}</p>
+                  {% if order.address_line_2 %}
+                  <p class="mb-1">{{order.address_line_2}}</p>
+                  {% endif %}
+                  <p class="mb-1">{{order.city}}, {{order.state}}</p>
+                  <p class="mb-1">{{order.country}} - {{order.pincode}}</p>
+                </div>
+                {% if order.order_note %}
+                <div class="alert alert-info mt-3 mb-0">
+                  <small><i class="fa fa-info-circle mr-1"></i> <strong>Order Note:</strong> {{order.order_note}}</small>
+                </div>
+                {% endif %}
+              </div>
             </div>
             
-            <!-- Wallet Payment Option -->
-            <h5 class="card-header text-center mt-3">OR</h5>
-            <button id="wallet-payment-btn" class="btn btn-primary btn-block mt-3 mb-3">Pay with Wallet</button>
-            <div id="wallet-payment-message" class="text-center"></div>
+            <div class="card shadow-sm border-0 rounded-lg">
+              <div class="card-header bg-light py-3">
+                <h5 class="mb-0"><i class="fa fa-credit-card mr-2"></i> Payment Method</h5>
+              </div>
+              <div class="card-body">
+                <p class="card-text mb-4">Please select your preferred payment method:</p>
+                
+                <div class="payment-methods">
+                  
+                  <div class="payment-method mb-4">
+                    <div class="card-header py-3 bg-white">
+                      <div class="form-check d-flex justify-content-between align-items-center">
+                        <div>
+                          <input class="form-check-input" type="radio" name="paymentMethod" id="paypal" checked>
+                          <label class="form-check-label font-weight-bold" for="paypal">
+                            PayPal / Credit Card
+                          </label>
+                        </div>
+                        <img src="{% static './image/misc/payments.png' %}" height="26" alt="Payment methods">
+                      </div>
+                    </div>
+                    <div class="card-body bg-light py-3">
+                      <div id="paypal-button-container">
+                        <!-- PayPal button will load here -->
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="payment-method mb-4">
+                    <div class="card-header py-3 bg-white">
+                      <div class="form-check d-flex justify-content-between align-items-center">
+                        <div>
+                          <input class="form-check-input" type="radio" name="paymentMethod" id="wallet">
+                          <label class="form-check-label font-weight-bold" for="wallet">
+                            Pay with Wallet
+                          </label>
+                        </div>
+                        <i class="fa fa-wallet"></i>
+                      </div>
+                    </div>
+                    <div class="card-body bg-light py-3">
+                      <button id="wallet-payment-btn" class="btn btn-primary btn-block">Continue with Wallet Payment</button>
+                      <div id="wallet-payment-message" class="text-center mt-2"></div>
+                    </div>
+                  </div>
+                  
+                  {% if grand_total <= 1000 %}
+                  <div class="payment-method">
+                    <div class="card-header py-3 bg-white">
+                      <div class="form-check d-flex justify-content-between align-items-center">
+                        <div>
+                          <input class="form-check-input" type="radio" name="paymentMethod" id="cod">
+                          <label class="form-check-label font-weight-bold" for="cod">
+                            Cash On Delivery
+                          </label>
+                        </div>
+                        <i class="fa fa-money-bill"></i>
+                      </div>
+                    </div>
+                    <div class="card-body bg-light py-3">
+                      <a href="{% url 'confirm_cod' order.order_number %}" class="btn btn-dark btn-block">Confirm Cash On Delivery</a>
+                    </div>
+                  </div>
+                  {% endif %}
+                  
+                  {% if grand_total > 1000 %}
+                  <div class="alert alert-warning">
+                    <i class="fa fa-exclamation-triangle mr-2"></i>
+                    <strong>Note:</strong> Cash On Delivery is only available for orders up to $1,000.
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-5">
+            <div class="card shadow-sm border-0 rounded-lg">
+              <div class="card-header bg-light py-3">
+                <h5 class="mb-0"><i class="fa fa-receipt mr-2"></i> Order Summary</h5>
+              </div>
+              <div class="card-body">
+                
+                <div class="order-items mb-4">
+                  {% for item in cart_items %}
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                      <span class="badge badge-pill badge-secondary mr-2">{{ item.quantity }}</span>
+                      <span>{{ item.product.product_name }}</span>
+                    </div>
+                    <span>$ {{ item.sub_total }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+                
+                <hr>
+                
+                <div class="pricing-details">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal:</span>
+                    <span>$ {{ total }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Tax (2%):</span>
+                    <span>$ {{ tax }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Discount:</span>
+                    {% if discount_amount > 0 %}
+                    <span class="text-success">- $ {{ discount_amount }}</span>
+                    {% else %}
+                    <span>$ 0</span>
+                    {% endif %}
+                    
+                  
+                  </div>
+                  <div class="row">
+                    <div class="col-6">
+                        <p>Delivery Charge:</p>
+                    </div>
+                    <div class="col-6 text-right">
+                        <p>${{ delivery_charge }}</p>
+                    </div>
+                  </div>
+                  <div class="row font-weight-bold">
+                    <div class="col-6">
+                        <p>Grand Total:</p>
+                    </div>
+                    <div class="col-6 text-right">
+                        <p>${{ grand_total_with_delivery }}</p>
+                    </div>
+                </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Secure Payment Notice -->
+                <div class="security-note text-center mt-3">
+                  <i class="fa fa-lock mr-1"></i>
+                  <small class="text-muted">Secure Payment Processing</small>
+                </div>
+              </div>
+            </div>
             
-            <h5 class="card-header text-center">OR</h5>
-            <br>
-            <a href="{% url 'confirm_cod' order.order_number %}" class="btn btn-black btn-block mb-3"> Cash On Delivery</a>
             
-          </div> <!-- card-body.// -->
-        </div> <!-- card.// -->
-
-      </aside> <!-- col.// -->
-
-    </div> <!-- row.// -->
-
-    <!-- ============================ COMPONENT 1 END .// ================================= -->
-
-  </div> <!-- container .//  -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<!-- Add this script after including the PayPal SDK -->
+<!-- PayPal Script -->
 <script>
   function getCookie(name) {
     let cookieValue = null;
@@ -106,35 +216,39 @@
     return cookieValue;
   }
 
-  // Use grand_total instead of final_total
-  var amount = "{{ grand_total }}";
+  // Variables for payment processing
+  var amountUSD = "{{ usd_equivalent }}";
+  var amount = "{{ grand_total_with_delivery }}";
   var url = "{% url 'payments' %}";
   var csrftoken = getCookie('csrftoken');
   var orderID = "{{ order.order_number }}";
   var payment_method = 'PayPal';
   var redirect_url = "{% url 'order_complete' %}";
   
+  // PayPal Button Configuration
   paypal.Buttons({
     style: {
-      label: 'checkout',  // checkout | credit | pay | buynow | generic
-      size: 'responsive', // small | medium | large | responsive
-      shape: 'rect',      // pill | rect
-      color: 'blue'       // gold | blue | silver | black
-    },
-
-    createOrder: function(data, actions) {
-      // This function sets up the details of the transaction
-      return actions.order.create({
-        purchase_units: [{
-          amount: {
-            value: amount // Set the transaction amount here
-          }
-        }]
-      });
+      label: 'pay',
+      size: 'responsive',
+      shape: 'rect',
+      color: 'blue'
     },
     
+    createOrder: function(data, actions) {
+    return actions.order.create({
+      purchase_units: [{
+        amount: {
+          value: amount,
+          currency_code: 'USD'  
+        }
+      }]
+    });
+  },
+  onClick: function() {
+    console.log("PayPal button clicked");
+    // This helps verify the click event is firing
+  },
     onApprove: function(data, actions) {
-      // This function captures the transaction when it is approved
       return actions.order.capture().then(function(details) {
         // Show processing message
         document.getElementById('paypal-button-container').innerHTML = '<div class="alert alert-info text-center">Processing your payment... Please wait.</div>';
@@ -178,6 +292,26 @@
         '<div class="alert alert-danger">There was a problem with PayPal. Please try again later.</div>';
     }
   }).render('#paypal-button-container');
+
+  // Payment Method Radio Buttons Behavior
+  document.querySelectorAll('input[name="paymentMethod"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      // Hide all payment method content sections
+      document.querySelectorAll('.payment-method .card-body').forEach(function(body) {
+        body.style.display = 'none';
+      });
+      
+      // Show the selected payment method content
+      if (this.checked) {
+        this.closest('.payment-method').querySelector('.card-body').style.display = 'block';
+      }
+    });
+  });
+  
+  // Initialize by showing only the PayPal section (which is checked by default)
+  document.querySelectorAll('.payment-method .card-body').forEach(function(body, index) {
+    body.style.display = index === 0 ? 'block' : 'none';
+  });
 
   // Wallet Payment Processing
   document.getElementById('wallet-payment-btn').addEventListener('click', function() {

@@ -93,10 +93,8 @@ def product_detail(request, category_slug, product_slug):
             in_wishlist = Wishlist.objects.filter(user=request.user, product=single_product).exists()
             wishlist_product_ids = Wishlist.objects.filter(user=request.user).values_list('product_id', flat=True)
         
-        # Get related products and ensure they have offer information calculated
         related_products = Product.objects.filter(category=single_product.category, is_deleted=False).exclude(id=single_product.id)[:2]
         
-        # Get offer information
         discount_percentage = single_product.discount_percentage
         offer = single_product.offer
 

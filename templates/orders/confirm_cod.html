@@ -37,9 +37,17 @@
                   <dt>Discount:</dt>
                   <dd class="text-right">Rs. {{ discount_amount }}</dd>
                 </dl>
+                <div class="col-6">
+                  <p>Delivery Charge:</p>
+              </div>
+              <div class="col-6 text-right">
+                  <p>${{ delivery_charge }}</p>
+              </div>
                 <dl class="dlist-align">
                   <dt>Grand Total:</dt>
-                  <dd class="text-right text-dark b"><strong>Rs. {{ grand_total }}</strong></dd>
+                  <div class="col-6 text-right">
+                    <p>${{ grand_total_with_delivery }}</p>
+                </div>
                 </dl>
               </div>
             </div>

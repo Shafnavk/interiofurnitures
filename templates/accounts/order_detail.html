@@ -84,6 +84,11 @@
                                     <td>Rs. {{ item.product_price }}</td>
                                     <td>{{ item.quantity }}</td>
                                     <td>Rs. {{ item.product_price|multiply:item.quantity }}</td>
+                                    <td>
+                                        {% if item.returnitem_set.exists %}
+                                            <span class="badge bg-warning">Return Pending</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -105,9 +110,7 @@
                     </div>
 
                     <div class="text-end mt-4">
-                        {% if order.status == 'Shipped' or order.status == 'Completed' %}
-                            <a href="{% url 'track_order' order.id %}" class="btn btn-primary me-2">Track Order</a>
-                        {% endif %}
+                        
                         
                         {% if order.status == 'Pending' or order.status == 'Processing' or order.status == 'New' %}
                             <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
@@ -115,7 +118,7 @@
                             </button>
                         {% endif %}
 
-                        {% if order.status == 'Delivered' or order.status == 'Shipped' %}
+                        {% if order.status == 'Delivered' or order.status == 'Shipped' or order.status == 'New' or order.status == 'Processing'%}
                             {% if order.refund_status == 'Not Requested' %}
                                 <a href="{% url 'request_refund' order.id %}" class="btn btn-warning btn-sm">Return Order</a>
                             {% elif order.refund_status == 'Pending' %}
@@ -145,16 +148,28 @@
                 <h5 class="modal-title" id="cancelOrderModalLabel">Confirm Order Cancellation</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                Are you sure you want to cancel this order? This action cannot be undone.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <form action="{% url 'cancel_order' order.id %}" method="POST">
-                    {% csrf_token %}
+            <form action="{% url 'cancel_order' order.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel this order? This action cannot be undone.</p>
+                    
+                    <div class="mb-3">
+                        <label for="cancellation_reason" class="form-label">Cancellation Reason</label>
+                        <textarea class="form-control" id="cancellation_reason" name="cancellation_reason" rows="3" required></textarea>
+                    </div>
+                    
+                    {% if order.payment_method != 'Cash On Delivery' and order.payment_method != 'COD' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        The order amount of ₹{{ order.order_total }} will be refunded to your wallet.
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-danger">Confirm Cancel</button>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>

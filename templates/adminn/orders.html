@@ -27,7 +27,7 @@
                     <tr>
                         <td>#{{ order.id }}</td>
                         <td>{{ order.user.email }}</td>
-                        <td>₹{{ order.order_total }}</td>
+                        <td>${{ order.order_total }}</td>
                         <td>
                             <span class="badge {% if order.status == 'Delivered' %}bg-success
                                            {% elif order.status == 'Cancelled' %}bg-danger
@@ -148,7 +148,7 @@
                         </div>
                         <div class="card-body">
                             <p><strong>Customer:</strong> {{ order.user.email }}</p>
-                            <p><strong>Order Total:</strong> ₹{{ order.order_total }}</p>
+                            <p><strong>Order Total:</strong> ${{ order.order_total }}</p>
                             <p><strong>Status:</strong> 
                                 <span class="badge {% if order.status == 'Delivered' %}bg-success
                                                {% elif order.status == 'Cancelled' %}bg-danger
@@ -173,7 +173,7 @@
                     <div class="alert alert-info">
                         <p><i class="fas fa-info-circle"></i> <strong>Note:</strong> Approving this refund will:</p>
                         <ul>
-                            <li>Add ₹{{ order.order_total }} to customer's wallet</li>
+                            <li>Add ${{ order.order_total }} to customer's wallet</li>
                             <li>Change order status to "Refunded"</li>
                             <li>The customer will be notified of the refund</li>
                         </ul>
@@ -190,7 +190,7 @@
                     {% elif order.refund_status == 'Completed' %}
                     <div class="alert alert-success">
                         <p><i class="fas fa-check-circle"></i> <strong>Refund has been processed</strong></p>
-                        <p>Refund of ₹{{ order.order_total }} was added to customer's wallet on {{ order.refunded_at|date:"M d, Y" }}</p>
+                        <p>Refund of ${{ order.order_total }} was added to customer's wallet on {{ order.refunded_at|date:"M d, Y" }}</p>
                     </div>
                     {% elif order.refund_status == 'Rejected' %}
                     <div class="alert alert-danger">

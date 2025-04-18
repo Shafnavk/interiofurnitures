@@ -1,0 +1,115 @@
+<!-- edit_delivery_charge.html - Nearly identical to add_delivery_charge.html -->
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">{{ title }}: {{ delivery_charge.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="{{ form.name.id_for_label }}">Name</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.charge_type.id_for_label }}">Charge Type</label>
+                            {{ form.charge_type }}
+                            {% if form.charge_type.errors %}
+                                <div class="text-danger">{{ form.charge_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.amount.id_for_label }}">Amount</label>
+                            {{ form.amount }}
+                            {% if form.amount.errors %}
+                                <div class="text-danger">{{ form.amount.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div id="location-fields">
+                            <div class="form-group">
+                                <label for="{{ form.country.id_for_label }}">Country</label>
+                                {{ form.country }}
+                                {% if form.country.errors %}
+                                    <div class="text-danger">{{ form.country.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.state.id_for_label }}">State/Province</label>
+                                {{ form.state }}
+                                {% if form.state.errors %}
+                                    <div class="text-danger">{{ form.state.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.city.id_for_label }}">City</label>
+                                {{ form.city }}
+                                {% if form.city.errors %}
+                                    <div class="text-danger">{{ form.city.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.free_shipping_threshold.id_for_label }}">Free Shipping Threshold</label>
+                            {{ form.free_shipping_threshold }}
+                            <small class="form-text text-muted">Set to 0 if you don't want to offer free shipping</small>
+                            {% if form.free_shipping_threshold.errors %}
+                                <div class="text-danger">{{ form.free_shipping_threshold.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group form-check">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active</label>
+                            {% if form.is_active.errors %}
+                                <div class="text-danger">{{ form.is_active.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Update</button>
+                            <a href="{% url 'adminn:delivery_charge_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chargeTypeField = document.getElementById('{{ form.charge_type.id_for_label }}');
+        const locationFields = document.getElementById('location-fields');
+        
+        function toggleLocationFields() {
+            if (chargeTypeField.value === 'location') {
+                locationFields.style.display = 'block';
+            } else {
+                locationFields.style.display = 'none';
+            }
+        }
+        
+        // Initial call
+        toggleLocationFields();
+        
+        // Add event listener
+        chargeTypeField.addEventListener('change', toggleLocationFields);
+    });
+</script>
+{% endblock %}

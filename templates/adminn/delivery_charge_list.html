@@ -1,0 +1,131 @@
+<!-- delivery_charge_list.html -->
+{% extends 'adminn/adminbase.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <br>
+    <br>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    
+                    <h4 class="card-title">Delivery Charges</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            
+                        </div>
+                        <a href="{% url 'adminn:add_delivery_charge' %}" class="btn btn-primary">Add New Delivery Charge</a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <h5>Active Delivery Charges</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Location</th>
+                                    <th>Free Shipping Threshold</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for charge in active_charges %}
+                                <tr>
+                                    <td>{{ charge.name }}</td>
+                                    <td>{{ charge.get_charge_type_display }}</td>
+                                    <td>${{ charge.amount }}</td>
+                                    <td>
+                                        {% if charge.charge_type == 'location' %}
+                                            {{ charge.country }}
+                                            {% if charge.state %}, {{ charge.state }}{% endif %}
+                                            {% if charge.city %}, {{ charge.city }}{% endif %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if charge.free_shipping_threshold > 0 %}
+                                            ${{ charge.free_shipping_threshold }}
+                                        {% else %}
+                                            None
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'adminn:edit_delivery_charge' charge.id %}" class="btn btn-sm btn-info">Edit</a>
+                                        <a href="{% url 'adminn:deactivate_delivery_charge' charge.id %}" class="btn btn-sm btn-warning">Deactivate</a>
+                                        <a href="{% url 'adminn:delete_delivery_charge' charge.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this delivery charge? This action cannot be undone.')">Delete</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No active delivery charges found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h5 class="mt-4">Inactive Delivery Charges</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Location</th>
+                                    <th>Free Shipping Threshold</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for charge in inactive_charges %}
+                                <tr>
+                                    <td>{{ charge.name }}</td>
+                                    <td>{{ charge.get_charge_type_display }}</td>
+                                    <td>${{ charge.amount }}</td>
+                                    <td>
+                                        {% if charge.charge_type == 'location' %}
+                                            {{ charge.country }}
+                                            {% if charge.state %}, {{ charge.state }}{% endif %}
+                                            {% if charge.city %}, {{ charge.city }}{% endif %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if charge.free_shipping_threshold > 0 %}
+                                        ${{ charge.free_shipping_threshold }}
+                                        {% else %}
+                                            None
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'adminn:edit_delivery_charge' charge.id %}" class="btn btn-sm btn-info">Edit</a>
+                                        <a href="{% url 'adminn:activate_delivery_charge' charge.id %}" class="btn btn-sm btn-success">Activate</a>
+                                        <a href="{% url 'adminn:delete_delivery_charge' charge.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this delivery charge? This action cannot be undone.')">Delete</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No inactive delivery charges found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+

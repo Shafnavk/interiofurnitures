@@ -1,53 +1,72 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block content %}
-<div class="container my-5">
+<div class="container mt-5">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h4>Request Refund for Order #{{ order.order_number }}</h4>
-                </div>
-                <div class="card-body">
-                    <div class="order-summary mb-4">
-                        <h5>Order Summary</h5>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Order Date:</strong> {{ order.created_at|date:"M d, Y" }}</p>
-                                <p><strong>Order Status:</strong> {{ order.status }}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p><strong>Order Total:</strong> ₹{{ order.order_total }}</p>
-                                <p><strong>Payment Method:</strong> {{ order.payment.payment_method }}</p>
-                            </div>
+        <div class="col-12">
+            <h3>Return Items from Order #{{ order.order_number }}</h3>
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Select Items to Return</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Select</th>
+                                        <th>Product</th>
+                                        <th>Price</th>
+                                        <th>Ordered Qty</th>
+                                        <th>Return Qty</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order_products %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="selected_items" value="{{ item.id }}" class="form-check-input">
+                                        </td>
+                                        <td>{{ item.product.product_name }}</td>
+                                        <td>₹{{ item.product_price }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>
+                                            <select name="quantity_{{ item.id }}" class="form-control">
+                                                {% for i in item.quantity|get_range %}
+                                                <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="form-group mb-3">
-                            <label for="refund_reason">Reason for Refund</label>
-                            <textarea class="form-control" id="refund_reason" name="refund_reason" rows="4" required></textarea>
-                            <small class="form-text text-muted">Please provide detailed information about why you're requesting a refund.</small>
-                        </div>
-                        
-                        <div class="alert alert-info mb-3">
-                            <p><strong>Refund Policy:</strong></p>
-                            <ul>
-                                <li>Approved refunds will be credited to your wallet balance</li>
-                                <li>Processing may take 2-3 business days</li>
-                                <li>Our team will review your request and may contact you for more information</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'order_detail' order.id %}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Submit Refund Request</button>
-                        </div>
-                    </form>
                 </div>
-            </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Return Reason</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="refund_reason" class="form-label">Please explain why you're returning these items:</label>
+                            <textarea class="form-control" id="refund_reason" name="refund_reason" rows="4" required></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'order_detail' order_id=order.id %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Submit Return Request</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

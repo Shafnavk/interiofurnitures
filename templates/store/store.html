@@ -84,10 +84,10 @@
                                 <label for="min_price" class="form-label">Min</label>
                                 <select name="min_price" id="min_price" class="form-select">
                                     <option value="">0</option>
-                                    <option value="500" {% if selected_min == '500' %}selected{% endif %}>Rs:500</option>
-                                    <option value="1000" {% if selected_min == '1000' %}selected{% endif %}>Rs:1000</option>
-                                    <option value="1500" {% if selected_min == '1500' %}selected{% endif %}>Rs:1500</option>
-                                    <option value="2000" {% if selected_min == '2000' %}selected{% endif %}>Rs:2000</option>
+                                    <option value="500" {% if selected_min == '500' %}selected{% endif %}>$500</option>
+                                    <option value="1000" {% if selected_min == '1000' %}selected{% endif %}>$1000</option>
+                                    <option value="1500" {% if selected_min == '1500' %}selected{% endif %}>$1500</option>
+                                    <option value="2000" {% if selected_min == '2000' %}selected{% endif %}>$2000</option>
                                 </select>
                             </div>
                             
@@ -95,10 +95,10 @@
                                 <label for="max_price" class="form-label">Max</label>
                                 <select name="max_price" id="max_price" class="form-select">
                                     <option value="">0</option>
-                                    <option value="2000" {% if selected_max == '2000' %}selected{% endif %}>Rs:2000</option>
-                                    <option value="5000" {% if selected_max == '5000' %}selected{% endif %}>Rs:5000</option>
-                                    <option value="10000" {% if selected_max == '10000' %}selected{% endif %}>Rs:10000</option>
-                                    <option value="25000" {% if selected_max == '25000' %}selected{% endif %}>Rs:25000</option>
+                                    <option value="2000" {% if selected_max == '2000' %}selected{% endif %}>$2000</option>
+                                    <option value="5000" {% if selected_max == '5000' %}selected{% endif %}>$5000</option>
+                                    <option value="10000" {% if selected_max == '10000' %}selected{% endif %}>$10000</option>
+                                    <option value="25000" {% if selected_max == '25000' %}selected{% endif %}>$25000</option>
                                 </select>
                             </div>
 
@@ -173,10 +173,10 @@
                             
                             <div class="price-container">
                                 {% if product.discount_percentage > 0 %}
-                                    <span class="original-price">Rs: {{ product.price }}</span>
-                                    <span class="discounted-price">Rs: {{ product.get_discounted_price }}</span>
+                                    <span class="original-price">$ {{ product.price }}</span>
+                                    <span class="discounted-price">$ {{ product.get_discounted_price }}</span>
                                 {% else %}
-                                    <p class="card-text">Rs: {{ product.price }}</p>
+                                    <p class="card-text">$ {{ product.price }}</p>
                                 {% endif %}
                             </div>
                             <a href="{{ product.get_url }}" class="detail-btn">View Details</a>

@@ -2,9 +2,8 @@ from django import forms
 from .models import Order
 import re
 from .locations import COUNTRIES, STATES_BY_COUNTRY
-    
 from django import forms
-from .models import Coupon
+from .models import Coupon, DeliveryCharge    
 from django.utils import timezone
 
 class OrderForm(forms.ModelForm):
@@ -88,3 +87,37 @@ class CouponForm(forms.ModelForm):
 class CouponApplyForm(forms.Form):
     """Form for customers to apply a coupon code"""
     code = forms.CharField(label="Coupon Code", max_length=50)
+
+
+
+class DeliveryChargeForm(forms.ModelForm):
+    class Meta:
+        model = DeliveryCharge
+        fields = ['name', 'charge_type', 'amount', 'country', 'state', 'city', 
+                  'free_shipping_threshold', 'is_active']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['country'].required = False
+        self.fields['state'].required = False
+        self.fields['city'].required = False
+        
+        # Custom field labels and help text
+        self.fields['name'].widget.attrs.update({'class': 'form-control'})
+        self.fields['charge_type'].widget.attrs.update({'class': 'form-control'})
+        self.fields['amount'].widget.attrs.update({'class': 'form-control'})
+        self.fields['country'].widget.attrs.update({'class': 'form-control'})
+        self.fields['state'].widget.attrs.update({'class': 'form-control'})
+        self.fields['city'].widget.attrs.update({'class': 'form-control'})
+        self.fields['free_shipping_threshold'].widget.attrs.update({'class': 'form-control'})
+        self.fields['is_active'].widget.attrs.update({'class': 'form-check-input'})
+        
+    def clean(self):
+        cleaned_data = super().clean()
+        charge_type = cleaned_data.get('charge_type')
+        country = cleaned_data.get('country')
+        
+        if charge_type == 'location' and not country:
+            self.add_error('country', 'Country is required for location-based delivery charges')
+        
+        return cleaned_data

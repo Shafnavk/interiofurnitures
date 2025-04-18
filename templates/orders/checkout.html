@@ -140,11 +140,26 @@
         
         <!-- Order Summary -->
         <div class="col-md-4">
+            <!-- Coupon Section -->
             <div class="card mb-4">
                 <div class="card-header py-3">
                     <h5 class="mb-0">Have a coupon?</h5>
                 </div>
                 <div class="card-body">
+                    {% if request.session.coupon_id %}
+                    <!-- Applied Coupon Display -->
+                    <div class="d-flex justify-content-between align-items-center p-2 border rounded bg-light">
+                        <div>
+                            <i class="fas fa-tag me-2"></i>
+                            <strong>{{ coupon_name }}</strong>
+                            <span class="ms-2 text-success">You saved ${{ request.session.discount|floatformat:2 }}</span>
+                        </div>
+                        <a href="{% url 'remove_coupon' %}" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-times"></i> Remove
+                        </a>
+                    </div>
+                    {% else %}
+                    <!-- Coupon Form -->
                     <form action="{% url 'apply_coupon' %}" method="POST">
                         {% csrf_token %}
                         <div class="input-group">
@@ -155,22 +170,40 @@
                         </div>
                     </form>
                     
-                    {% if request.session.coupon_id %}
-                    <div class="mt-3">
-                        <div class="alert alert-success d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-tag mr-2"></i>
-                                Coupon applied! You saved Rs:{{ request.session.discount|floatformat:2 }}
+                    <!-- Available Coupons Section -->
+                    {% if available_coupons %}
+                    <div class="mt-4">
+                        <h6>Available Coupons:</h6>
+                        <div class="coupon-list">
+                            {% for avail_coupon in available_coupons %}
+                            <div class="coupon-item mb-2 p-2 border rounded">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ avail_coupon.code }}</strong>
+                                        {% if avail_coupon.discount_type == 'percentage' %}
+                                            - {{ avail_coupon.discount_value }}% off
+                                        {% else %}
+                                            - ${{ avail_coupon.discount_value }} off
+                                        {% endif %}
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary copy-coupon" 
+                                            data-coupon="{{ avail_coupon.code }}">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                {% if avail_coupon.minimum_amount %}
+                                <small class="text-muted">Min. order: ${{ avail_coupon.minimum_amount }}</small>
+                                {% endif %}
+                                <small class="text-muted d-block">Valid till: {{ avail_coupon.valid_to|date:'d M Y' }}</small>
                             </div>
-                            
+                            {% endfor %}
                         </div>
-                        <a href="{% url 'remove_coupon' %}" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-times"></i> Remove
-                        </a>
                     </div>
+                    {% endif %}
                     {% endif %}
                 </div>
             </div>
+            
             <div class="card">
                 <div class="card-header">
                     <h4 class="mb-0">Order Summary</h4>
@@ -179,31 +212,81 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-0">
                             Subtotal
-                            <span>Rs:{{ total }}</span>
+                            <span>${{ total }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center px-0 pb-0">
                             Tax
-                            <span>Rs:{{ tax}}</span>
+                            <span>${{ tax }}</span>
                         </li>
                         
+                        <!-- Product discounts -->
+                        {% if discount_amount > 0 %}
                         <li class="list-group-item d-flex justify-content-between align-items-center px-0 pb-0 text-success">
-                            Discount
-                            <span>-Rs:{{coupon_discount_amount }}</span>
+                            Product Discount
+                            <span>-${{ discount_amount }}</span>
                         </li>
+                        {% endif %}
                         
+                        <!-- Coupon discount -->
+                        {% if request.session.discount > 0 %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 pb-0 text-success">
+                            Coupon Discount
+                            <span>-${{ request.session.discount|floatformat:2 }}</span>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Total discount (only show if there's a discount) -->
+                        {% if total_discount > 0 %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 pb-0 text-success font-weight-bold">
+                            Total Savings
+                            <span>-${{ total_discount|floatformat:2 }}</span>
+                        </li>
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-6">
+                                <p>Delivery Charge:</p>
+                            </div>
+                            <div class="col-6 text-right">
+                                <p>${{ delivery_charge }}</p>
+                            </div>
+                        </div>
                         
                         <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 mb-3">
                             <div>
                                 <strong>Total amount</strong>
                             </div>
-                            <span><strong>Rs:{{ grand_total }}</strong></span>
+                            <div class="row font-weight-bold">
+                                <div class="col-6">
+                                    <p>Grand Total:</p>
+                                </div>
+                                <div class="col-6 text-right">
+                                    <p>${{ grand_total_with_delivery }}</p>
+                                </div>
+                            </div>
                         </li>
                     </ul>
                 </div>
             </div>
+        
         </div>
     </div>
 </div>
+
+<style>
+.coupon-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.coupon-item {
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.coupon-item:hover {
+    background-color: #e9ecef;
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -276,7 +359,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 citySelect.disabled = false;
             });
     });
+    
+    // Coupon copy functionality
+    const copyButtons = document.querySelectorAll('.copy-coupon');
+    copyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const couponCode = this.getAttribute('data-coupon');
+            const couponInput = document.querySelector('input[name="code"]');
+            couponInput.value = couponCode;
+            
+            // Show a confirmation message
+            this.innerHTML = '<i class="fas fa-check"></i> Copied';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-copy"></i> Copy';
+            }, 2000);
+        });
+    });
 });
 </script>
 
-{% endblock %} 
+{% endblock %}

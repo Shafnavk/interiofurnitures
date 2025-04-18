@@ -460,13 +460,13 @@
                 <div class="price-container">
                     {% if discount_percentage > 0 %}
                     <div id="base-price" class="price">
-                        <span class="original-price">₹{{ single_product.price }}</span>
-                        <span class="currency">₹</span>
+                        <span class="original-price">${{ single_product.price }}</span>
+                        <span class="currency">$</span>
                         <span class="amount discount-price">{{ single_product.get_discounted_price }}</span>
                     </div>
                     {% else %}
                     <div id="base-price" class="price">
-                        <span class="currency">₹</span>
+                        <span class="currency">$</span>
                         <span class="amount">{{ single_product.price }}</span>
                     </div>
                     {% endif %}
@@ -538,9 +538,9 @@
                     <h3>{{ product.product_name }}</h3>
                     <span class="float-right">4.5/5 <i class="fa fa-star text-warning"></i></span>
                     {% if product.discount_percentage > 0 %}
-                    <p><span class="original-price">₹{{ product.price }}</span> <span class="discount-price">₹{{ product.get_discounted_price }}</span></p>
+                    <p><span class="original-price">${{ product.price }}</span> <span class="discount-price">${{ product.get_discounted_price }}</span></p>
                     {% else %}
-                    <p>₹{{ product.price }}</p>
+                    <p>${{ product.price }}</p>
                     {% endif %}
                     <a href="{{ product.get_url }}" class="btn">View Details</a>
                 </a>
@@ -590,7 +590,7 @@ function updateTotalPrice(quantity) {
     
     if (parseInt(quantity) > 1) {
         basePriceElement.style.display = 'none';
-        totalPriceElement.innerHTML = `<span class="currency">₹</span><span class="amount">$${total.toFixed(2)}</span>`;
+        totalPriceElement.innerHTML = `<span class="currency">$</span><span class="amount">$${total.toFixed(2)}</span>`;
         totalPriceElement.style.display = 'flex';
         totalPriceElement.style.alignItems = 'center';
         totalPriceElement.style.justifyContent = 'center';

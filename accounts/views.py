@@ -17,6 +17,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage, send_mail
 from . models import Account, Address
 import re
+from decimal import Decimal
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -33,7 +34,7 @@ import random
 from .models import OTP
 import datetime
 from django.http import JsonResponse
-from orders.models import Order, OrderProduct
+from orders.models import Order, OrderProduct, ReturnItem
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 
@@ -237,16 +238,13 @@ def login_with_google(request):
         'include_granted_scopes': 'true'
     }
     
-    # Construct and redirect to Google's authorization URL
     url = f'https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}'
     return redirect(url)
 
 @never_cache
 @csrf_protect
 def google_callback(request):
-    """
-    Handles the Google OAuth2 callback and user creation/login.
-    """
+   
     if request.method == 'GET':
         code = request.GET.get('code')
         state = request.GET.get('state')
@@ -260,7 +258,7 @@ def google_callback(request):
             return redirect('login')
         
         try:
-            # Exchange code for access token
+            
             token_url = "https://oauth2.googleapis.com/token"
             token_data = {
                 'code': code,
@@ -270,27 +268,23 @@ def google_callback(request):
                 'grant_type': 'authorization_code'
             }
             
-            # Get access token
             token_response = requests.post(token_url, data=token_data)
-            token_response.raise_for_status()  # Raise exception for bad status codes
+            token_response.raise_for_status()  
             token_json = token_response.json()
             access_token = token_json.get('access_token')
             
-            # Get user info from Google
             user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
             headers = {'Authorization': f'Bearer {access_token}'}
             user_info_response = requests.get(user_info_url, headers=headers)
             user_info_response.raise_for_status()
             user_info = user_info_response.json()
-            
-            # Extract user information
+          
             email = user_info.get('email')
             full_name = user_info.get('name', '')
             first_name = full_name.split(' ')[0] if full_name else ''
             last_name = full_name.split(' ')[-1] if len(full_name.split(' ')) > 1 else ''
             username = email.split('@')[0]
-            
-            # Create or get user
+           
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
@@ -354,7 +348,7 @@ def login(request):
             if request.POST.get('remember_me'):
                 request.session.set_expiry(settings.SESSION_COOKIE_AGE)
             else:
-                request.session.set_expiry(0)  # Session expires when browser closes
+                request.session.set_expiry(0)  
             
             return redirect('adminn:adminhome' if user.is_superadmin else 'home')
         else:
@@ -516,7 +510,7 @@ def change_password(request):
 
 @login_required
 def user_orders(request):
-    # Get all orders for the current user
+    
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'users/orders.html', {'orders': orders})
 
@@ -531,55 +525,49 @@ def order_detail(request, order_id):
     }
     return render(request, 'accounts/order_detail.html', context)
 
-@login_required(login_url='login')
-def track_order(request, order_id):
-    order = get_object_or_404(Order, id=order_id, user=request.user)
-    tracking_updates = order.tracking_updates.all()
-    
-    # Calculate days remaining until delivery (if estimated date exists)
-    days_remaining = None
-    if order.estimated_delivery_date:
-        today = timezone.now().date()
-        if today <= order.estimated_delivery_date:
-            days_remaining = (order.estimated_delivery_date - today).days
-    
-    context = {
-        'order': order,
-        'tracking_updates': tracking_updates,
-        'days_remaining': days_remaining,
-    }
-    return render(request, 'accounts/track_order.html', context)
 
 @login_required(login_url='login')
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     
-    # Define cancellable statuses
     cancellable_statuses = ['New', 'Pending', 'Processing']
     
     if order.status in cancellable_statuses:
         try:
             with transaction.atomic():
-                # Get cancellation reason if provided
                 cancellation_reason = request.POST.get('cancellation_reason', 'User requested')
                 
-                # Update order status
                 order.status = 'Cancelled'
                 order.cancellation_reason = cancellation_reason
                 order.cancelled_at = timezone.now()
                 order.save()
                 
-                # Restore product stock
                 ordered_products = OrderProduct.objects.filter(order=order)
                 for item in ordered_products:
                     product = item.product
                     product.stock += item.quantity
                     product.save()
                 
-                # Optional: Create a cancellation log or notification
-                # You might want to create a CancellationLog model or send an email notification
                 
-                messages.success(request, 'Order has been cancelled successfully.')
+                if order.payment_method != 'Cash On Delivery' and order.payment_method != 'COD':
+                    wallet, created = Wallet.objects.get_or_create(user=request.user)
+                    
+                    
+                    WalletTransaction.objects.create(
+                        wallet=wallet,
+                        amount=order.order_total,
+                        transaction_type='CREDIT',
+                        
+                        description=f"Refund for cancelled order #{order.order_number}"
+                    )
+                    
+                   
+                    wallet.balance += Decimal(str(order.order_total))
+                    wallet.save()
+                    
+                    messages.success(request, f'Order has been cancelled successfully. ${order.order_total} has been refunded to your wallet.')
+                else:
+                    messages.success(request, 'Order has been cancelled successfully.')
                 
         except Exception as e:
             logger.error(f"Order cancellation error: {str(e)}")
@@ -588,6 +576,7 @@ def cancel_order(request, order_id):
         messages.error(request, f'Order with status {order.status} cannot be cancelled.')
     
     return redirect('order_detail', order_id=order_id)
+
 @csrf_protect
 @never_cache   
 @login_required(login_url="login")
@@ -669,32 +658,54 @@ def set_default_address(request, address_id):
 @login_required(login_url='login')
 def request_refund(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
+    order_products = OrderProduct.objects.filter(order=order)
     
-    eligible_statuses = ['Delivered', 'Shipped']
-    ineligible_refund_statuses = ['Approved', 'Completed']
+    eligible_statuses = ['Delivered', 'Shipped', 'Processing', 'New']
     
     if order.status not in eligible_statuses:
         messages.error(request, f'Orders with status "{order.status}" are not eligible for refund.')
         return redirect('order_detail', order_id=order_id)
     
-    if order.refund_status in ineligible_refund_statuses:
-        messages.error(request, f'This order has already been refunded.')
-        return redirect('order_detail', order_id=order_id)
-    
     if request.method == 'POST':
-        refund_reason = request.POST.get('refund_reason')
-        if not refund_reason:
-            messages.error(request, 'Please provide a reason for the refund.')
+        selected_items = request.POST.getlist('selected_items')
+        return_reason = request.POST.get('refund_reason')
+        
+        if not selected_items:
+            messages.error(request, 'Please select at least one item to return.')
+            return redirect('request_refund', order_id=order_id)
+            
+        if not return_reason:
+            messages.error(request, 'Please provide a reason for the return.')
             return redirect('request_refund', order_id=order_id)
         
-        order.refund_status = 'Pending'
-        order.refund_reason = refund_reason
-        order.save()
+        for item_id in selected_items:
+            order_product = get_object_or_404(OrderProduct, id=item_id, order=order)
+            quantity = int(request.POST.get(f'quantity_{item_id}', 1))
+            
+            # Ensure return quantity doesn't exceed original quantity
+            if quantity > order_product.quantity:
+                quantity = order_product.quantity
+                
+            # Create return request for this item
+            ReturnItem.objects.create(
+                order_product=order_product,
+                return_quantity=quantity,
+                reason=return_reason
+            )
         
-        messages.success(request, 'Your refund request has been submitted and is being reviewed.')
+        # Update order status to indicate items pending return
+        if not order.refund_status == 'Pending':
+            order.refund_status = 'Pending'
+            order.save()
+            
+        messages.success(request, 'Your return request has been submitted and is being reviewed.')
         return redirect('order_detail', order_id=order_id)
     
-    return render(request, 'accounts/request_refund.html', {'order': order})
+    context = {
+        'order': order,
+        'order_products': order_products,
+    }
+    return render(request, 'accounts/request_refund.html', {'order': order, 'order_products': order_products})
 
 @login_required(login_url='login')
 def my_wallet(request):

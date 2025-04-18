@@ -6,7 +6,7 @@ from django.contrib import messages, auth
 from django.contrib.auth.decorators import user_passes_test
 from accounts.models import Account, Wallet, WalletTransaction
 from store.forms import CategoryOfferForm, ProductOfferForm
-from orders.forms import CouponForm
+from orders.forms import CouponForm, DeliveryChargeForm
 from .utils import generate_invoice_pdf, send_invoice_email
 from .utils import generate_invoice_pdf, send_invoice_email
 from django.core.paginator import Paginator
@@ -14,9 +14,11 @@ from store.models import CategoryOffer, Product, ProductImage, ProductOffer
 from .forms import ProductForm, ProductImageForm
 from category.models import Category
 from .forms import CategoryForm
-from orders.models import Coupon, CouponUsage, Order, OrderProduct
+from orders.models import Coupon, CouponUsage, DeliveryCharge, Order, OrderProduct
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Sum, Count
+from datetime import datetime, timedelta
 import base64
 from django.core.files.base import ContentFile
 import json
@@ -62,26 +64,93 @@ def user_view(request):
         return redirect('adminn:adminhome')
     else:
         return render(request, 'home.html')
-
+    
 @never_cache
 @superuser_required
 def adminhome(request):
     if not request.user.is_superadmin:
         messages.error(request, "You don't have permission to access the admin dashboard.")
         return redirect('dashboard')
+
     total_users = Account.objects.filter(is_superadmin=False).count()
     total_products = Product.objects.count()
     total_orders = Order.objects.count()
+   
+    total_revenue = Order.objects.filter(is_ordered=True).aggregate(
+        total=Sum('order_total'))['total'] or 0
+   
+    time_period = request.GET.get('time_period', 'monthly')
+   
+    current_date = datetime.now()
+    if time_period == 'yearly':
 
+        labels = [(current_date.year - i) for i in range(5)]
+        sales_data = []
+        for year in labels:
+            year_sales = Order.objects.filter(
+                created_at__year=year, 
+                is_ordered=True
+            ).aggregate(total=Sum('order_total'))['total'] or 0
+            sales_data.append(year_sales)
+        labels = [str(year) for year in labels]
+    elif time_period == 'monthly':
+       
+        labels = []
+        sales_data = []
+        for i in range(5, -1, -1):
+            month_date = current_date - timedelta(days=30*i)
+            month_name = month_date.strftime('%b %Y')
+            labels.append(month_name)
+            
+            month_sales = Order.objects.filter(
+                created_at__year=month_date.year,
+                created_at__month=month_date.month,
+                is_ordered=True
+            ).aggregate(total=Sum('order_total'))['total'] or 0
+            sales_data.append(month_sales)
+    else: 
+        labels = []
+        sales_data = []
+        for i in range(6, -1, -1):
+            day_date = current_date - timedelta(days=i)
+            day_name = day_date.strftime('%a')
+            labels.append(day_name)
+            
+            day_sales = Order.objects.filter(
+                created_at__date=day_date.date(),
+                is_ordered=True
+            ).aggregate(total=Sum('order_total'))['total'] or 0
+            sales_data.append(day_sales)
+   
+    best_selling_products = OrderProduct.objects.values(
+        'product__product_name'
+    ).annotate(
+        total_sold=Sum('quantity')
+    ).order_by('-total_sold')[:10]
+ 
+    best_selling_categories = OrderProduct.objects.values(
+        'product__category__category_name'
+    ).annotate(
+        total_sold=Sum('quantity')
+    ).order_by('-total_sold')[:10]
+
+    recent_orders = Order.objects.filter(is_ordered=True).order_by('-created_at')[:5]
+    
     context = {
         "email": request.user.email,
         "first_name": request.user.first_name,
         "total_users": total_users,
         "total_products": total_products,
-         "total_orders": total_orders,
+        "total_orders": total_orders,
+        "total_revenue": total_revenue,
+        "time_period": time_period,
+        "labels": labels,
+        "sales_data": sales_data,
+        "best_selling_products": best_selling_products,
+        "best_selling_categories": best_selling_categories,
+        "recent_orders": recent_orders,
     }
-    return render(request, 'adminn/adminhome.html', context)  
-
+    return render(request, 'adminn/adminhome.html', context)
 
 def users(request):
     accounts = Account.objects.filter(is_superadmin=False)
@@ -113,14 +182,11 @@ def signout(request):
 
 @superuser_required
 def productlist(request):
-    # Get search query from GET parameters
     search_query = request.GET.get('search', '').strip()
 
-    # Base querysets
     products = Product.objects.filter(is_deleted=False)
     deleted_products = Product.objects.filter(is_deleted=True)
 
-    # Apply search filter if query exists
     if search_query:
         products = products.filter(
             Q(product_name__icontains=search_query) | 
@@ -137,7 +203,7 @@ def productlist(request):
     return render(request, 'adminn/productlist.html', {
         'products': products,
         'deleted_products': deleted_products,
-        'search_query': search_query  # Pass search query back to template
+        'search_query': search_query  
     })
 
 @csrf_protect
@@ -432,10 +498,7 @@ def admin_orders(request):
     return render(request, 'adminn/orders.html', context)
 
 def get_valid_next_statuses(current_status):
-    """
-    Returns a list of valid next statuses based on the current status
-    This enforces a logical flow through the order process
-    """
+    
     status_flow = {
         'New': ['Processing', 'Cancelled'],
         'Processing': ['Shipped', 'Cancelled'],
@@ -512,77 +575,6 @@ def update_order_status(request, order_id):
     return redirect('adminn:admin_orders')
 
 @login_required
-def manage_order_tracking(request, order_id):
-    if not request.user.is_superadmin:
-        return redirect('home')
-        
-    order = get_object_or_404(Order, id=order_id)
-    tracking_updates = TrackingUpdate.objects.filter(order=order).order_by('-timestamp')
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
-        if action == 'update_tracking_info':
-            
-            tracking_number = request.POST.get('tracking_number')
-            carrier = request.POST.get('carrier')
-            estimated_delivery_date = request.POST.get('estimated_delivery_date')
-            
-            order.tracking_number = tracking_number
-            order.carrier = carrier
-            
-            if estimated_delivery_date:
-                try:
-                    order.estimated_delivery_date = timezone.datetime.strptime(
-                        estimated_delivery_date, '%Y-%m-%d'
-                    ).date()
-                except ValueError:
-                    messages.error(request, 'Invalid date format. Use YYYY-MM-DD.')
-                    return redirect('adminn:manage_order_tracking', order_id=order_id)
-            
-            order.save()
-            messages.success(request, 'Tracking information updated successfully.')
-            
-        elif action == 'add_tracking_update':
-            
-            status = request.POST.get('status')
-            location = request.POST.get('location')
-            description = request.POST.get('description')
-            
-            if status:
-                TrackingUpdate.objects.create(
-                    order=order,
-                    status=status,
-                    location=location,
-                    description=description,
-                    timestamp=timezone.now()
-                )
-                messages.success(request, 'Tracking update added successfully.')
-            else:
-                messages.error(request, 'Status is required.')
-                
-        elif action == 'delete_tracking_update':
-            
-            update_id = request.POST.get('update_id')
-            if update_id:
-                try:
-                    update = TrackingUpdate.objects.get(id=update_id, order=order)
-                    update.delete()
-                    messages.success(request, 'Tracking update deleted successfully.')
-                except TrackingUpdate.DoesNotExist:
-                    messages.error(request, 'Tracking update not found.')
-            
-        return redirect('adminn:manage_order_tracking', order_id=order_id)
-    
-    context = {
-        'order': order,
-        'tracking_updates': tracking_updates,
-        'status_choices': TrackingUpdate.STATUS_CHOICES,
-    }
-    
-    return render(request, 'adminn/manage_order_tracking.html', context)
-
-@login_required
 def download_invoice(request, order_id):
     if not request.user.is_superadmin:
         return redirect('home')
@@ -611,11 +603,8 @@ def send_invoice(request, order_id):
     
     return redirect('adminn:admin_orders')
 
-
-
 @user_passes_test(lambda u: u.is_superadmin)
 def sales_report(request):
-  
     date_range = request.GET.get('date_range', 'all')
     start_date_str = request.GET.get('start_date', '')
     end_date_str = request.GET.get('end_date', '')
@@ -659,7 +648,19 @@ def sales_report(request):
     total_sales = order_totals['total_sales'] or 0
     total_discount = order_totals['total_discount'] or 0
     net_sales = total_sales - total_discount
+    
+    refunded_orders = orders.filter(status='Refunded')
+    total_refunded_amount = refunded_orders.aggregate(Sum('order_total'))['order_total__sum'] or 0
+    
+    adjusted_net_sales = net_sales - total_refunded_amount
+    
+    refunds_by_date = refunded_orders.values('refunded_at__date').annotate(
+        date=F('refunded_at__date'),
+        refund_count=Count('id'),
+        refund_amount=Sum('order_total')
+    ).order_by('date')
   
+    
     coupon_usages = CouponUsage.objects.filter(order__in=orders)
     coupons_used = coupon_usages.values('coupon__code').annotate(
         count=Count('id'),
@@ -673,6 +674,10 @@ def sales_report(request):
         discounts=Sum('discount_amount')
     ).order_by('date')
     
+    order_status = orders.values('status').annotate(
+        count=Count('id')
+    ).order_by('status')
+    
     context = {
         'orders': orders,
         'total_orders': total_orders,
@@ -685,6 +690,11 @@ def sales_report(request):
         'end_date': end_date,
         'coupons_used': coupons_used,
         'daily_sales': daily_sales,
+        'total_refunded_amount': total_refunded_amount,
+        'adjusted_net_sales': adjusted_net_sales,
+        'refunded_orders': refunded_orders,
+        'refunds_by_date': refunds_by_date,
+        'order_status': order_status,
     }
  
     export_format = request.GET.get('export')
@@ -692,11 +702,12 @@ def sales_report(request):
         return export_excel_report(context)
     elif export_format == 'pdf':
         return export_pdf_report(context)
+    elif export_format == 'csv':
+        return export_csv_report(request, context)
     
     return render(request, 'adminn/sales_report.html', context)
 
 def export_excel_report(context):
-   
     output = BytesIO()
     workbook = xlsxwriter.Workbook(output)
     worksheet = workbook.add_worksheet('Sales Report')
@@ -741,9 +752,10 @@ def export_excel_report(context):
     summary_data = [
         ['Total Orders', context['total_orders']],
         ['Total Items Sold', context['total_items_sold']],
-        ['Total Sales (₹)', context['total_sales']],
-        ['Total Discounts (₹)', context['total_discount']],
-        ['Net Sales (₹)', context['net_sales']],
+        ['Total Sales ($)', context['total_sales']],
+        ['Total Discounts ($)', context['total_discount']],
+        ['Total Refunds ($)', context['total_refunded_amount']],
+        ['Net Sales ($)', context['adjusted_net_sales']],
     ]
     
     for item in summary_data:
@@ -751,13 +763,28 @@ def export_excel_report(context):
         worksheet.write(row, 1, item[1], cell_format)
         row += 1
    
+    # Order Status Summary
+    row += 2
+    worksheet.merge_range(f'A{row}:F{row}', 'Order Status Summary', header_format)
+    row += 1
+    
+    worksheet.write(row, 0, 'Status', header_format)
+    worksheet.write(row, 1, 'Count', header_format)
+    row += 1
+    
+    for status in context['order_status']:
+        worksheet.write(row, 0, status['status'], cell_format)
+        worksheet.write(row, 1, status['count'], cell_format)
+        row += 1
+   
+    # Coupon Usage
     row += 2
     worksheet.merge_range(f'A{row}:F{row}', 'Coupon Usage', header_format)
     row += 1
     
     worksheet.write(row, 0, 'Coupon Code', header_format)
     worksheet.write(row, 1, 'Usage Count', header_format)
-    worksheet.write(row, 2, 'Total Discount (₹)', header_format)
+    worksheet.write(row, 2, 'Total Discount ($)', header_format)
     row += 1
     
     for coupon in context['coupons_used']:
@@ -772,9 +799,9 @@ def export_excel_report(context):
     
     worksheet.write(row, 0, 'Date', header_format)
     worksheet.write(row, 1, 'Orders', header_format)
-    worksheet.write(row, 2, 'Sales (₹)', header_format)
-    worksheet.write(row, 3, 'Discounts (₹)', header_format)
-    worksheet.write(row, 4, 'Net Sales (₹)', header_format)
+    worksheet.write(row, 2, 'Sales ($)', header_format)
+    worksheet.write(row, 3, 'Discounts ($)', header_format)
+    worksheet.write(row, 4, 'Net Sales ($)', header_format)
     row += 1
     
     for day in context['daily_sales']:
@@ -785,26 +812,44 @@ def export_excel_report(context):
         worksheet.write(row, 3, day['discounts'], cell_format)
         worksheet.write(row, 4, net, cell_format)
         row += 1
+    
+    if context['refunds_by_date']:
+        row += 2
+        worksheet.merge_range(f'A{row}:F{row}', 'Refund Summary', header_format)
+        row += 1
+        
+        worksheet.write(row, 0, 'Date', header_format)
+        worksheet.write(row, 1, 'Refund Count', header_format)
+        worksheet.write(row, 2, 'Refund Amount ($)', header_format)
+        row += 1
+        
+        for refund in context['refunds_by_date']:
+            worksheet.write(row, 0, str(refund['date']), cell_format)
+            worksheet.write(row, 1, refund['refund_count'], cell_format)
+            worksheet.write(row, 2, refund['refund_amount'], cell_format)
+            row += 1
  
     row += 2
-    worksheet.merge_range(f'A{row}:F{row}', 'Order Details', header_format)
+    worksheet.merge_range(f'A{row}:G{row}', 'Order Details', header_format)
     row += 1
     
     worksheet.write(row, 0, 'Order ID', header_format)
     worksheet.write(row, 1, 'Date', header_format)
     worksheet.write(row, 2, 'Customer', header_format)
-    worksheet.write(row, 3, 'Order Total (₹)', header_format)
-    worksheet.write(row, 4, 'Discount (₹)', header_format)
-    worksheet.write(row, 5, 'Net Total (₹)', header_format)
+    worksheet.write(row, 3, 'Status', header_format)
+    worksheet.write(row, 4, 'Order Total ($)', header_format)
+    worksheet.write(row, 5, 'Discount ($)', header_format)
+    worksheet.write(row, 6, 'Net Total ($)', header_format)
     row += 1
     
     for order in context['orders']:
         worksheet.write(row, 0, order.order_number, cell_format)
         worksheet.write(row, 1, str(order.created_at.date()), cell_format)
         worksheet.write(row, 2, order.user.email, cell_format)
-        worksheet.write(row, 3, order.order_total, cell_format)
-        worksheet.write(row, 4, order.discount_amount, cell_format)
-        worksheet.write(row, 5, order.order_total - order.discount_amount, cell_format)
+        worksheet.write(row, 3, order.status, cell_format)
+        worksheet.write(row, 4, order.order_total, cell_format)
+        worksheet.write(row, 5, order.discount_amount, cell_format)
+        worksheet.write(row, 6, order.order_total - order.discount_amount, cell_format)
         row += 1
     
     workbook.close()
@@ -819,7 +864,6 @@ def export_excel_report(context):
     return response
 
 def export_pdf_report(context):
-    
     buffer = BytesIO()
     
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -851,9 +895,10 @@ def export_pdf_report(context):
         ['Metric', 'Value'],
         ['Total Orders', str(context['total_orders'])],
         ['Total Items Sold', str(context['total_items_sold'])],
-        ['Total Sales (₹)', str(context['total_sales'])],
-        ['Total Discounts (₹)', str(context['total_discount'])],
-        ['Net Sales (₹)', str(context['net_sales'])],
+        ['Total Sales ($)', str(context['total_sales'])],
+        ['Total Discounts ($)', str(context['total_discount'])],
+        ['Total Refunds ($)', str(context['total_refunded_amount'])],
+        ['Net Sales ($)', str(context['adjusted_net_sales'])],
     ]
     
     summary_table = Table(summary_data, colWidths=[250, 150])
@@ -868,11 +913,35 @@ def export_pdf_report(context):
     
     elements.append(summary_table)
     elements.append(Paragraph(" ", normal_style))
+    
+    # Order Status Summary
+    elements.append(Paragraph("Order Status Summary", subtitle_style))
+    
+    status_data = [['Status', 'Count']]
+    for status in context['order_status']:
+        status_data.append([
+            status['status'],
+            str(status['count'])
+        ])
+    
+    status_table = Table(status_data, colWidths=[250, 150])
+    status_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.black),
+        ('ALIGN', (0, 0), (1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+        ('GRID', (0, 0), (1, -1), 1, colors.black),
+    ]))
+    
+    elements.append(status_table)
+    elements.append(Paragraph(" ", normal_style))
  
+    # Coupon Usage
     if context['coupons_used']:
         elements.append(Paragraph("Coupon Usage", subtitle_style))
         
-        coupon_data = [['Coupon Code', 'Usage Count', 'Total Discount (₹)']]
+        coupon_data = [['Coupon Code', 'Usage Count', 'Total Discount ($)']]
         for coupon in context['coupons_used']:
             coupon_data.append([
                 coupon['coupon__code'],
@@ -893,10 +962,11 @@ def export_pdf_report(context):
         elements.append(coupon_table)
         elements.append(Paragraph(" ", normal_style))
  
+    # Daily Sales Breakdown
     if context['daily_sales']:
         elements.append(Paragraph("Daily Sales Breakdown", subtitle_style))
         
-        daily_data = [['Date', 'Orders', 'Sales (₹)', 'Discounts (₹)', 'Net Sales (₹)']]
+        daily_data = [['Date', 'Orders', 'Sales ($)', 'Discounts ($)', 'Net Sales ($)']]
         for day in context['daily_sales']:
             net = day['sales'] - day['discounts']
             daily_data.append([
@@ -918,6 +988,32 @@ def export_pdf_report(context):
         ]))
         
         elements.append(daily_table)
+        elements.append(Paragraph(" ", normal_style))
+    
+    # Refund Summary
+    if context['refunds_by_date']:
+        elements.append(Paragraph("Refund Summary", subtitle_style))
+        
+        refund_data = [['Date', 'Refund Count', 'Refund Amount ($)']]
+        for refund in context['refunds_by_date']:
+            refund_data.append([
+                str(refund['date']),
+                str(refund['refund_count']),
+                str(refund['refund_amount'])
+            ])
+        
+        refund_table = Table(refund_data, colWidths=[150, 150, 150])
+        refund_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (2, 0), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (2, 0), colors.black),
+            ('ALIGN', (0, 0), (2, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (2, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (2, 0), 12),
+            ('GRID', (0, 0), (2, -1), 1, colors.black),
+        ]))
+        
+        elements.append(refund_table)
+        elements.append(Paragraph(" ", normal_style))
 
     doc.build(elements)
     
@@ -942,13 +1038,23 @@ def export_csv_report(request, context):
     writer.writerow(['Summary'])
     writer.writerow(['Total Orders', context['total_orders']])
     writer.writerow(['Total Items Sold', context['total_items_sold']])
-    writer.writerow(['Total Sales (₹)', context['total_sales']])
-    writer.writerow(['Total Discounts (₹)', context['total_discount']])
-    writer.writerow(['Net Sales (₹)', context['net_sales']])
+    writer.writerow(['Total Sales ($)', context['total_sales']])
+    writer.writerow(['Total Discounts ($)', context['total_discount']])
+    writer.writerow(['Total Refunds ($)', context['total_refunded_amount']])
+    writer.writerow(['Net Sales ($)', context['adjusted_net_sales']])
+    writer.writerow([])
+    
+    writer.writerow(['Order Status'])
+    writer.writerow(['Status', 'Count'])
+    for status in context['order_status']:
+        writer.writerow([
+            status['status'],
+            status['count']
+        ])
     writer.writerow([])
    
     writer.writerow(['Coupon Usage'])
-    writer.writerow(['Coupon Code', 'Usage Count', 'Total Discount (₹)'])
+    writer.writerow(['Coupon Code', 'Usage Count', 'Total Discount ($)'])
     for coupon in context['coupons_used']:
         writer.writerow([
             coupon['coupon__code'],
@@ -956,21 +1062,32 @@ def export_csv_report(request, context):
             coupon['total_discount']
         ])
     writer.writerow([])
+    
+    if context['refunds_by_date']:
+        writer.writerow(['Refund Summary'])
+        writer.writerow(['Date', 'Refund Count', 'Refund Amount ($)'])
+        for refund in context['refunds_by_date']:
+            writer.writerow([
+                refund['date'],
+                refund['refund_count'],
+                refund['refund_amount']
+            ])
+        writer.writerow([])
   
     writer.writerow(['Order Details'])
-    writer.writerow(['Order ID', 'Date', 'Customer', 'Order Total (₹)', 'Discount (₹)', 'Net Total (₹)'])
+    writer.writerow(['Order ID', 'Date', 'Customer', 'Status', 'Order Total ($)', 'Discount ($)', 'Net Total ($)'])
     for order in context['orders']:
         writer.writerow([
             order.order_number,
             order.created_at.date(),
             order.user.email,
+            order.status,
             order.order_total,
             order.discount_amount,
             order.order_total - order.discount_amount
         ])
     
     return response
-
 
 @login_required(login_url='login')
 def process_refund(request, order_id):
@@ -1004,14 +1121,13 @@ def process_refund(request, order_id):
                         description=f'Refund for order #{order.order_number}',
                         order=order
                     )
-                    
-                    # Update order status
+                  
                     order.refund_status = 'Completed'
                     order.status = 'Refunded'
                     order.refunded_at = timezone.now()
                     order.save()
                     
-                    messages.success(request, f'Refund of ₹{order.order_total} has been processed to customer wallet.')
+                    messages.success(request, f'Refund of ${order.order_total} has been processed to customer wallet.')
             except Exception as e:
                 messages.error(request, f'Error processing refund: {str(e)}')
         
@@ -1159,3 +1275,102 @@ def toggle_category_offer(request, offer_id):
     status = "activated" if offer.is_active else "deactivated"
     messages.success(request, f'Category offer {status} successfully!')
     return redirect('adminn:offers_dashboard')
+
+@never_cache
+@superuser_required
+def delivery_charge_list(request):
+    search_query = request.GET.get('search', '').strip()
+    
+    active_charges = DeliveryCharge.objects.filter(is_active=True)
+    inactive_charges = DeliveryCharge.objects.filter(is_active=False)
+    
+    if search_query:
+        active_charges = active_charges.filter(
+            Q(name__icontains=search_query) | 
+            Q(country__icontains=search_query) |
+            Q(state__icontains=search_query) |
+            Q(city__icontains=search_query)
+        )
+        
+        inactive_charges = inactive_charges.filter(
+            Q(name__icontains=search_query) | 
+            Q(country__icontains=search_query) |
+            Q(state__icontains=search_query) |
+            Q(city__icontains=search_query)
+        )
+    
+    context = {
+        'active_charges': active_charges,
+        'inactive_charges': inactive_charges,
+        'search_query': search_query
+    }
+    return render(request, 'adminn/delivery_charge_list.html', context)
+
+@never_cache
+@superuser_required
+def add_delivery_charge(request):
+    if request.method == 'POST':
+        form = DeliveryChargeForm(request.POST)
+        if form.is_valid():
+            try:
+                delivery_charge = form.save()
+                messages.success(request, f'Delivery charge "{delivery_charge.name}" added successfully!')
+                return redirect('adminn:delivery_charge_list')
+            except Exception as e:
+                messages.error(request, f'Error saving delivery charge: {str(e)}')
+    else:
+        form = DeliveryChargeForm()
+    
+    context = {
+        'form': form,
+        'title': 'Add Delivery Charge'
+    }
+    return render(request, 'adminn/add_delivery_charge.html', context)
+
+@never_cache
+@superuser_required
+def edit_delivery_charge(request, charge_id):
+    delivery_charge = get_object_or_404(DeliveryCharge, id=charge_id)
+    
+    if request.method == 'POST':
+        form = DeliveryChargeForm(request.POST, instance=delivery_charge)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, f'Delivery charge "{delivery_charge.name}" updated successfully!')
+                return redirect('adminn:delivery_charge_list')
+            except Exception as e:
+                messages.error(request, f'Error updating delivery charge: {str(e)}')
+    else:
+        form = DeliveryChargeForm(instance=delivery_charge)
+    
+    context = {
+        'form': form,
+        'delivery_charge': delivery_charge,
+        'title': 'Edit Delivery Charge'
+    }
+    return render(request, 'adminn/edit_delivery_charge.html', context)
+
+@superuser_required
+def deactivate_delivery_charge(request, charge_id):
+    delivery_charge = get_object_or_404(DeliveryCharge, id=charge_id)
+    delivery_charge.is_active = False
+    delivery_charge.save()
+    messages.success(request, f'Delivery charge "{delivery_charge.name}" deactivated!')
+    return redirect('adminn:delivery_charge_list')
+
+@superuser_required
+def activate_delivery_charge(request, charge_id):
+    delivery_charge = get_object_or_404(DeliveryCharge, id=charge_id)
+    delivery_charge.is_active = True
+    delivery_charge.save()
+    messages.success(request, f'Delivery charge "{delivery_charge.name}" activated!')
+    return redirect('adminn:delivery_charge_list')
+
+@superuser_required
+def delete_delivery_charge(request, charge_id):
+    delivery_charge = get_object_or_404(DeliveryCharge, id=charge_id)
+    name = delivery_charge.name
+    delivery_charge.delete()
+    messages.success(request, f'Delivery charge "{name}" permanently deleted!')
+    return redirect('adminn:delivery_charge_list')

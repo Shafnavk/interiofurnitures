@@ -62,6 +62,27 @@
     .download-btn {
         margin-right: 10px;
     }
+    /* Added styles for improved UI */
+    .export-buttons {
+        display: flex;
+        justify-content: flex-end;
+    }
+    .badge-refunded {
+        background-color: #d63384;
+        color: white;
+    }
+    .summary-row {
+        border-top: 2px solid #dee2e6;
+        font-weight: bold;
+    }
+    .csv-button {
+        background-color: #28a745;
+        color: white;
+    }
+    .csv-button:hover {
+        background-color: #218838;
+        color: white;
+    }
 </style>
 
 <div class="container mt-5">
@@ -75,7 +96,7 @@
                 <div class="card-body">
                     <!-- Date Filter Form -->
                     <div class="date-filter-form">
-                        <form method="GET" action="{% url 'adminn:sales_report' %}" class="row align-items-end">
+                        <form method="GET" action="{% url 'adminn:sales_report' %}" class="row">
                             <div class="col-md-3 mb-3">
                                 <label for="date_range">Date Range:</label>
                                 <select id="date_range" name="date_range" class="form-control" onchange="toggleCustomDate()">
@@ -88,32 +109,38 @@
                                 </select>
                             </div>
                             
-                            <div id="custom_date_range" class="row" style="display: {% if date_range == 'custom' %}flex{% else %}none{% endif %};">
-                                <div class="col-md-6 mb-3">
-                                    <label for="start_date">Start Date:</label>
-                                    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="end_date">End Date:</label>
-                                    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                            <div id="custom_date_range" class="col-md-6" style="display: {% if date_range == 'custom' %}flex{% else %}none{% endif %};">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="start_date">Start Date:</label>
+                                        <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="end_date">End Date:</label>
+                                        <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="col-md-2 mb-3">
+                            <div class="col-md-3 mb-3 d-flex align-items-end">
                                 <button type="submit" class="btn btn-custom">Generate Report</button>
                             </div>
-                            
-                            <div class="col-md-4 mb-3 text-right ml-auto">
-                                <div class="btn-group">
-                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'export' %}{{ key }}={{ value }}&{% endif %}{% endfor %}export=excel" class="btn btn-success download-btn">
-                                        <i class="fas fa-file-excel"></i> Excel
-                                    </a>
-                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'export' %}{{ key }}={{ value }}&{% endif %}{% endfor %}export=pdf" class="btn btn-danger download-btn">
-                                        <i class="fas fa-file-pdf"></i> PDF
-                                    </a>
-                                </div>
-                            </div>
                         </form>
+                        
+                        <!-- Export Buttons - Separate from the form -->
+                        <div class="export-buttons mt-3">
+                            <div class="btn-group">
+                                <a href="?{% for key, value in request.GET.items %}{% if key != 'export' %}{{ key }}={{ value }}&{% endif %}{% endfor %}export=excel" class="btn btn-success download-btn">
+                                    <i class="fas fa-file-excel"></i> Excel
+                                </a>
+                                <a href="?{% for key, value in request.GET.items %}{% if key != 'export' %}{{ key }}={{ value }}&{% endif %}{% endfor %}export=pdf" class="btn btn-danger download-btn">
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                </a>
+                                <a href="?{% for key, value in request.GET.items %}{% if key != 'export' %}{{ key }}={{ value }}&{% endif %}{% endfor %}export=csv" class="btn csv-button download-btn">
+                                    <i class="fas fa-file-csv"></i> CSV
+                                </a>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Summary Cards -->
@@ -135,7 +162,7 @@
                         </h4>
                         
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="stat-card p-3">
                                     <div class="d-flex justify-content-between">
                                         <div>
@@ -149,7 +176,7 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="stat-card p-3">
                                     <div class="d-flex justify-content-between">
                                         <div>
@@ -163,22 +190,132 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <div class="stat-card p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-0">Gross Sales</h6>
+                                            <h3 class="mt-2">${{ total_sales }}</h3>
+                                            <small class="text-muted">Before discounts & refunds</small>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-dollar-sign fa-3x text-muted"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
                                 <div class="stat-card p-3">
                                     <div class="d-flex justify-content-between">
                                         <div>
                                             <h6 class="text-muted mb-0">Net Sales</h6>
-                                            <h3 class="mt-2">₹{{ net_sales }}</h3>
-                                            <small class="text-success">Gross: ₹{{ total_sales }} | Discounts: ₹{{ total_discount }}</small>
+                                            <h3 class="mt-2">${{ adjusted_net_sales }}</h3>
+                                            <small class="text-danger">Refunds: -${{ total_refunded_amount }}</small>
                                         </div>
                                         <div class="align-self-center">
-                                            <i class="fas fa-rupee-sign fa-3x text-muted"></i>
+                                            <i class="fas fa-chart-line fa-3x text-muted"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Detailed Sales Summary -->
+                        <div class="table-responsive mt-4">
+                            <table class="table table-bordered">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Total Sales</td>
+                                        <td>${{ total_sales }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total Discounts</td>
+                                        <td>-${{ total_discount }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Net Sales (before refunds)</td>
+                                        <td>${{ net_sales }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total Refunds</td>
+                                        <td>-${{ total_refunded_amount }}</td>
+                                    </tr>
+                                    <tr class="summary-row">
+                                        <td>Adjusted Net Sales</td>
+                                        <td>${{ adjusted_net_sales }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                    
+                    <!-- Order Status Summary -->
+                    <div class="report-section">
+                        <h4 class="report-heading">Order Status Summary</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Count</th>
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in order_status %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge text-dark {% if status.status == 'New' %}badge-info{% elif status.status == 'Processing' %}badge-primary{% elif status.status == 'Shipped' %}badge-warning{% elif status.status == 'Delivered' %}badge-success{% elif status.status == 'Cancelled' %}badge-danger{% elif status.status == 'Refunded' %}badge-refunded{% endif %}">
+                                                {{ status.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ status.count }}</td>
+                                        
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Refund Summary -->
+                    {% if refunds_by_date %}
+                    <div class="report-section">
+                        <h4 class="report-heading">Refund Summary</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Refund Count</th>
+                                        <th>Refund Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for refund in refunds_by_date %}
+                                    <tr>
+                                        <td>{{ refund.date|date:"M d, Y" }}</td>
+                                        <td>{{ refund.refund_count }}</td>
+                                        <td>${{ refund.refund_amount }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="summary-row">
+                                        <td>Total</td>
+                                        <td>{{ refunded_orders.count }}</td>
+                                        <td>${{ total_refunded_amount }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
                     
                     <!-- Coupon Usage -->
                     {% if coupons_used %}
@@ -191,6 +328,7 @@
                                         <th>Coupon Code</th>
                                         <th>Usage Count</th>
                                         <th>Total Discount</th>
+                                        
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -198,9 +336,16 @@
                                     <tr>
                                         <td>{{ coupon.coupon__code }}</td>
                                         <td>{{ coupon.count }}</td>
-                                        <td>₹{{ coupon.total_discount }}</td>
+                                        <td>${{ coupon.total_discount }}</td>
+                                        
                                     </tr>
                                     {% endfor %}
+                                    <tr class="summary-row">
+                                        <td>Total</td>
+                                        
+                                        <td>${{ total_discount }}</td>
+                                        <td></td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -225,11 +370,11 @@
                                 <tbody>
                                     {% for day in daily_sales %}
                                     <tr>
-                                        <td>{{ day.date }}</td>
+                                        <td>{{ day.date|date:"M d, Y" }}</td>
                                         <td>{{ day.orders }}</td>
-                                        <td>₹{{ day.sales }}</td>
-                                        <td>₹{{ day.discounts }}</td>
-                                        <td>₹{{ day.sales|default:0|sub:day.discounts|default:0 }}</td>
+                                        <td>${{ day.sales }}</td>
+                                        <td>${{ day.discounts|default:0 }}</td>
+                                        <td>${{ day.sales|default:0|sub:day.discounts|default:0 }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -256,18 +401,18 @@
                                 </thead>
                                 <tbody>
                                     {% for order in orders %}
-                                    <tr>
+                                    <tr {% if order.status == 'Refunded' %}class="table-danger"{% endif %}>
                                         <td>{{ order.order_number }}</td>
                                         <td>{{ order.created_at|date:"M d, Y" }}</td>
                                         <td>{{ order.user.email }}</td>
                                         <td>
-                                            <span class="badge {% if order.status == 'New' %}badge-info{% elif order.status == 'Processing' %}badge-primary{% elif order.status == 'Shipped' %}badge-warning{% elif order.status == 'Delivered' %}badge-success{% elif order.status == 'Cancelled' %}badge-danger{% endif %}">
+                                            <span class="badge text-dark {% if order.status == 'New' %}badge-info{% elif order.status == 'Processing' %}badge-primary{% elif order.status == 'Shipped' %}badge-warning{% elif order.status == 'Delivered' %}badge-success{% elif order.status == 'Cancelled' %}badge-danger{% elif order.status == 'Refunded' %}badge-refunded{% endif %}">
                                                 {{ order.status }}
                                             </span>
                                         </td>
-                                        <td>₹{{ order.order_total }}</td>
-                                        <td>₹{{ order.discount_amount }}</td>
-                                        <td>₹{{ order.order_total|sub:order.discount_amount }}</td>
+                                        <td>${{ order.order_total }}</td>
+                                        <td>${{ order.discount_amount }}</td>
+                                        <td>${{ order.order_total|sub:order.discount_amount }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
