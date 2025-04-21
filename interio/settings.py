@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +24,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1*0(scp7w#x4s!p#gic5rru6om6qukl#*i#)w&*lk6ry-&smi('
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ['interio-env.eba-ip6ixs5j.us-west-2.elasticbeanstalk.com']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -158,8 +161,9 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend'
 ]
 SITE_ID = 1
-GOOGLE_CLIENT_ID = '697167595814-u5seafb6amele8prn2mc1cdlcss7uss1.apps.googleusercontent.com'
-GOOGLE_CLIENT_SECRET = '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'
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+
 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
@@ -181,8 +185,8 @@ SOCIALACCOUNT_PROVIDERS = {
             'prompt': 'select_account'
         },
         'APP': {
-            'client_id': '697167595814-u5seafb6amele8prn2mc1cdlcss7uss1.apps.googleusercontent.com',
-            'secret': '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',
+            'client_id': GOOGLE_CLIENT_ID,
+            'secret': GOOGLE_CLIENT_SECRET,
             'key': ''
         }
     }
@@ -198,9 +202,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DEFAULT_FROM_EMAIL = 'shafnavk70@gmail.com'
 
 EMAIL_USE_TLS = True
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'shafnavk70@gmail.com'
-EMAIL_HOST_PASSWORD = 'ikvz bcex ivck vycg'
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 SERVER_EMAIL = EMAIL_HOST_USER
