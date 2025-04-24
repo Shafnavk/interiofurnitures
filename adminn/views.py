@@ -575,6 +575,22 @@ def update_order_status(request, order_id):
     return redirect('adminn:admin_orders')
 
 @login_required
+def admin_order_detail(request, order_id):
+    if not request.user.is_superadmin:
+        return redirect('home')
+        
+    order = get_object_or_404(Order, id=order_id)
+    order_products = OrderProduct.objects.filter(order=order)
+    tracking_updates = TrackingUpdate.objects.filter(order=order).order_by('-timestamp')
+    
+    context = {
+        'order': order,
+        'order_products': order_products,
+        'tracking_updates': tracking_updates,
+    }
+    return render(request, 'adminn/order_detail.html', context)
+
+@login_required
 def download_invoice(request, order_id):
     if not request.user.is_superadmin:
         return redirect('home')

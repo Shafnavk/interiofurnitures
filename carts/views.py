@@ -158,7 +158,6 @@ def cart(request, total=0, quantity=0, cart_items=None):
     
     return render(request, 'store/cart.html', context)
 
-# Update the update_quantity function to handle AJAX requests
 def update_quantity(request, cart_item_id, action):
     if request.method == 'POST':
         try:
@@ -215,9 +214,9 @@ def update_quantity(request, cart_item_id, action):
             
             cart_item.save()
             
-            # If this is an AJAX request, return JSON response
+
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                # Recalculate cart totals
+                
                 cart = cart_item.cart
                 cart_items = CartItem.objects.filter(cart=cart)
                 total = 0
@@ -230,7 +229,6 @@ def update_quantity(request, cart_item_id, action):
                 tax = (2 * total) / 100
                 grand_total = total + tax
                 
-                # Calculate this item's total
                 item_total = cart_item.product.get_discounted_price * cart_item.quantity
                 
                 return JsonResponse({

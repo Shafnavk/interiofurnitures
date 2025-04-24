@@ -55,8 +55,8 @@
                                     <i class="fas fa-undo"></i> Refund
                                 </button>
                                 
-                                <a href="{% url 'adminn:send_invoice' order.id %}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-envelope"></i> Email Invoice
+                                <a href="{% url 'adminn:admin_order_detail' order.id %}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-eye"></i> View Details
                                 </a>
                             </div>
                         </td>
