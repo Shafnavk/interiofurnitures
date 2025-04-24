@@ -1,3 +1,5 @@
+# First, update your views.py to handle AJAX requests for the update_quantity view
+
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.exceptions import ObjectDoesNotExist
@@ -108,8 +110,6 @@ def remove_cart_item(request, cart_item_id):
     messages.success(request, f'{product_name} removed from cart.')
     return redirect('cart')
 
-
-
 def cart(request, total=0, quantity=0, cart_items=None):
     tax = 0
     grand_total = 0
@@ -158,6 +158,7 @@ def cart(request, total=0, quantity=0, cart_items=None):
     
     return render(request, 'store/cart.html', context)
 
+# Update the update_quantity function to handle AJAX requests
 def update_quantity(request, cart_item_id, action):
     if request.method == 'POST':
         try:
@@ -167,14 +168,25 @@ def update_quantity(request, cart_item_id, action):
             
             if action == 'increase':
                 if cart_item.quantity >= max_allowed:
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'success': False,
+                            'message': f'Maximum {max_allowed} items allowed per product.'
+                        })
                     messages.warning(request, f'Maximum {max_allowed} items allowed per product.')
                     return redirect('cart')
+                
                 cart_item.quantity += 1
             
             elif action == 'decrease':
                 if cart_item.quantity > 1:
                     cart_item.quantity -= 1
                 else:
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Quantity cannot be less than 1.'
+                        })
                     messages.warning(request, 'Quantity cannot be less than 1.')
                     return redirect('cart')
             
@@ -182,9 +194,19 @@ def update_quantity(request, cart_item_id, action):
                 try:
                     new_quantity = int(request.POST.get('quantity', 1))
                     if new_quantity < 1:
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'Quantity cannot be less than 1.'
+                            })
                         messages.warning(request, 'Quantity cannot be less than 1.')
                         return redirect('cart')
                     if new_quantity > max_allowed:
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({
+                                'success': False,
+                                'message': f'Maximum {max_allowed} items allowed per product.'
+                            })
                         messages.warning(request, f'Maximum {max_allowed} items allowed per product.')
                         new_quantity = max_allowed
                     cart_item.quantity = new_quantity
@@ -193,8 +215,43 @@ def update_quantity(request, cart_item_id, action):
             
             cart_item.save()
             
+            # If this is an AJAX request, return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Recalculate cart totals
+                cart = cart_item.cart
+                cart_items = CartItem.objects.filter(cart=cart)
+                total = 0
+                item_count = 0
+                
+                for item in cart_items:
+                    total += (item.product.get_discounted_price * item.quantity)
+                    item_count += item.quantity
+                
+                tax = (2 * total) / 100
+                grand_total = total + tax
+                
+                # Calculate this item's total
+                item_total = cart_item.product.get_discounted_price * cart_item.quantity
+                
+                return JsonResponse({
+                    'success': True,
+                    'quantity': cart_item.quantity,
+                    'item_total': item_total,
+                    'total': total,
+                    'tax': tax,
+                    'grand_total': grand_total,
+                    'cart_count': item_count,
+                    'message': 'Quantity updated successfully'
+                })
             
         except CartItem.DoesNotExist:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Cart item not found.'
+                })
             messages.error(request, 'Cart item not found.')
             
     return redirect('cart')
+
+

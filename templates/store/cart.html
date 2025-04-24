@@ -245,6 +245,71 @@
         margin-bottom: 1.5rem;
     }
 
+    /* Animation for quantity changes */
+    @keyframes highlight {
+        0% { background-color: rgba(74, 99, 93, 0.2); }
+        100% { background-color: transparent; }
+    }
+
+    .highlight {
+        animation: highlight 1s ease-out;
+    }
+
+    /* Alerts container styles */
+    .alerts-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .alert {
+        padding: 0.75rem 1.25rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        max-width: 350px;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-warning {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .btn-close {
+        margin-left: auto;
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        opacity: 0.5;
+    }
+
+    .btn-close:hover {
+        opacity: 1;
+    }
+
     @media (max-width: 992px) {
         .cart-layout {
             grid-template-columns: 1fr;
@@ -265,83 +330,71 @@
         <div class="cart-layout">
             <div class="cart-items">
                 <table class="cart-table">
-          <thead>
-            <tr>
+                    <thead>
+                        <tr>
                             <th>Product</th>
                             <th>Price</th>
                             <th>Quantity</th>
                             <th>Total</th>
                             <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for cart_item in cart_items %}
-            <tr>
-                                <td>
-                                    <div class="product-info">
-                                        <img src="{{ cart_item.product.images.first.image.url }}" alt="{{ cart_item.product.product_name }}" class="product-image">
-                                        <div class="product-details">
-                                            <h3>{{ cart_item.product.product_name }}</h3>
-                  </div>
-                </div>
-              </td>
-                                <td>
-                                    <div class="product-price">{{ cart_item.product.get_discounted_price }}</div>
-                                </td>
-                                <td>
-                                    <div class="quantity-controls">
-                                        <form method="post" action="{% url 'update_quantity' cart_item.id 'decrease' %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="quantity-btn">-</button>
-                                        </form>
-                                        <form method="post" action="{% url 'update_quantity' cart_item.id 'set' %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <input type="number" 
-                                                name="quantity" 
-                                                class="quantity-input" 
-                                                value="{{ cart_item.quantity }}" 
-                                                min="1" 
-                                                max="{{ cart_item.get_max_allowed_quantity }}" 
-                                                onchange="this.form.submit()"
-                                                title="Maximum {{ cart_item.get_max_allowed_quantity }} items allowed">
-                                        </form>
-                                        <form method="post" action="{% url 'update_quantity' cart_item.id 'increase' %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="quantity-btn">+</button>
-                                        </form>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cart_item in cart_items %}
+                        <tr data-cart-item="{{ cart_item.id }}">
+                            <td>
+                                <div class="product-info">
+                                    <img src="{{ cart_item.product.images.first.image.url }}" alt="{{ cart_item.product.product_name }}" class="product-image">
+                                    <div class="product-details">
+                                        <h3>{{ cart_item.product.product_name }}</h3>
                                     </div>
-                                </td>
-                                <td>
-                                    <div class="product-price">$<div class="product-price">{{ cart_item.product.get_discounted_price }}</div></div>
-                                </td>
-                                <td>
-                                    <form method="post" action="{% url 'remove_cart_item' cart_item.id %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="remove-btn" onclick="return confirm('Are you sure you want to remove this item?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-  </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="product-price">${{ cart_item.product.get_discounted_price }}</div>
+                            </td>
+                            <td>
+                                <div class="quantity-controls">
+                                    <button type="button" class="quantity-btn decrease-btn" data-cart-item="{{ cart_item.id }}">-</button>
+                                    <input type="number" 
+                                        name="quantity" 
+                                        class="quantity-input" 
+                                        value="{{ cart_item.quantity }}" 
+                                        min="1" 
+                                        max="{{ cart_item.get_max_allowed_quantity }}" 
+                                        data-cart-item="{{ cart_item.id }}"
+                                        title="Maximum {{ cart_item.get_max_allowed_quantity }} items allowed">
+                                    <button type="button" class="quantity-btn increase-btn" data-cart-item="{{ cart_item.id }}">+</button>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="product-price item-total">${{ cart_item.product.get_discounted_price|floatformat:2 }}</div>
+                            </td>
+                            <td>
+                                <button type="button" class="remove-btn" data-cart-item="{{ cart_item.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
             <div class="cart-summary">
                 <h2>Order Summary</h2>
                 <div class="summary-row">
                     <span>Subtotal</span>
-                    <span>${{ total }}</span>
-        </div>
+                    <span class="subtotal">${{ total|floatformat:2 }}</span>
+                </div>
                 <div class="summary-row">
                     <span>Tax (2%)</span>
-                    <span>${{ tax }}</span>
-      </div>
+                    <span class="tax">${{ tax|floatformat:2 }}</span>
+                </div>
                 <div class="summary-row total">
                     <span>Grand Total</span>
-                    <span>${{ grand_total }}</span>
-      </div>
+                    <span class="grand-total">${{ grand_total|floatformat:2 }}</span>
+                </div>
                 <div class="button-group">
                     <a href="{% url 'store' %}" class="continue-shopping-btn">Continue Shopping</a>
                     {% if cart_items %}
@@ -351,9 +404,9 @@
                             <a href="{% url 'login' %}?next={% url 'checkout' %}" class="checkout-btn">Login to Checkout</a>
                         {% endif %}
                     {% endif %}
-    </div>
+                </div>
             </div>
-          </div>
+        </div>
     {% else %}
         <div class="empty-cart">
             <h2>Your cart is empty</h2>
@@ -364,6 +417,13 @@
 </div>
 
 <script>
+// Get CSRF token
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
 // Simple utility to show messages
 function showMessage(message, type = 'success') {
     const alertsContainer = document.querySelector('.alerts-container') || 
@@ -371,17 +431,13 @@ function showMessage(message, type = 'success') {
     
     if (!document.querySelector('.alerts-container')) {
         alertsContainer.className = 'alerts-container';
-        alertsContainer.style.position = 'fixed';
-        alertsContainer.style.top = '20px';
-        alertsContainer.style.right = '20px';
-        alertsContainer.style.zIndex = '1000';
         document.body.appendChild(alertsContainer);
     }
     
     const alert = document.createElement('div');
     alert.className = `alert alert-${type} alert-dismissible fade show`;
     alert.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2"></i>
         ${message}
         <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
     `;
@@ -390,43 +446,88 @@ function showMessage(message, type = 'success') {
     setTimeout(() => alert.remove(), 5000);
 }
 
-// Get CSRF token
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+// Helper to highlight updated elements
+function highlightElement(element) {
+    element.classList.add('highlight');
+    setTimeout(() => {
+        element.classList.remove('highlight');
+    }, 1000);
 }
 
-// Update quantity
-function updateQuantity(cartItemId, action, value = null) {
-    let url = `/cart/update_quantity/${cartItemId}/${action}/`;
-    if (value) {
-        url += `?value=${value}`;
+// Update all cart totals with the provided data
+function updateCartTotals(data) {
+    // Update subtotal
+    const subtotalElement = document.querySelector('.summary-row .subtotal');
+    if (subtotalElement) {
+        subtotalElement.textContent = `$${data.total.toFixed(2)}`;
+        highlightElement(subtotalElement);
     }
     
+    // Update tax
+    const taxElement = document.querySelector('.summary-row .tax');
+    if (taxElement) {
+        taxElement.textContent = `$${data.tax.toFixed(2)}`;
+        highlightElement(taxElement);
+    }
+    
+    // Update grand total
+    const grandTotalElement = document.querySelector('.summary-row.total .grand-total');
+    if (grandTotalElement) {
+        grandTotalElement.textContent = `$${data.grand_total.toFixed(2)}`;
+        highlightElement(grandTotalElement);
+    }
+    
+    // Update cart counter in header if it exists
+    const cartCounter = document.querySelector('.cart-counter');
+    if (cartCounter) {
+        cartCounter.textContent = data.cart_count;
+        highlightElement(cartCounter);
+    }
+}
+
+// Handle quantity change via AJAX
+function handleQuantityChange(cartItemId, action, value = null) {
+    // Prepare the URL and data
+    let url = `/cart/update_quantity/${cartItemId}/${action}/`;
+    let formData = new FormData();
+    
+    if (action === 'set' && value !== null) {
+        formData.append('quantity', value);
+    }
+    
+    // Make the AJAX request
     fetch(url, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Get the row and elements that need updating
+            const row = document.querySelector(`tr[data-cart-item="${cartItemId}"]`);
+            const quantityInput = row.querySelector('.quantity-input');
+            const itemTotal = row.querySelector('.item-total');
+            
             // Update the quantity input
-            document.querySelector(`tr[data-cart-item="${cartItemId}"] .quantity-input`).value = data.quantity;
+            quantityInput.value = data.quantity;
+            highlightElement(quantityInput);
             
             // Update the item total
-            document.querySelector(`tr[data-cart-item="${cartItemId}"] .product-price:last-child`).textContent = `$${data.sub_total}`;
+            itemTotal.textContent = `$${data.item_total.toFixed(2)}`;
+            highlightElement(itemTotal);
             
-            // Update cart totals
-            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `$${data.total}`;
-            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `$${data.tax}`;
-            document.querySelector('.summary-row.total span:last-child').textContent = `$${data.grand_total}`;
+            // Update all cart totals
+            updateCartTotals(data);
             
-            showMessage('Quantity updated successfully');
+            // Show success message
+            showMessage(data.message || 'Quantity updated successfully');
         } else {
-            showMessage(data.message || 'Error updating quantity', 'danger');
+            // Show error message
+            showMessage(data.message || 'Error updating quantity', 'warning');
         }
     })
     .catch(error => {
@@ -435,56 +536,83 @@ function updateQuantity(cartItemId, action, value = null) {
     });
 }
 
-// Set up event handlers for remove item forms
-document.addEventListener('DOMContentLoaded', function() {
-    const removeForms = document.querySelectorAll('.remove-item-form');
-    
-    removeForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            if (confirm('Are you sure you want to remove this item from your cart?')) {
-                const formAction = this.getAttribute('action');
-                
-                fetch(formAction, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Get the cart item row
-                        const cartItemRow = this.closest('tr');
-                        cartItemRow.style.transition = 'all 0.3s ease';
-                        cartItemRow.style.opacity = '0';
-                        
-                        setTimeout(() => {
-                            cartItemRow.remove();
-                            
-                            // Update totals
-                            document.querySelector('.summary-row:nth-child(1) span:last-child').textContent = `$${data.total}`;
-                            document.querySelector('.summary-row:nth-child(2) span:last-child').textContent = `$${data.tax}`;
-                            document.querySelector('.summary-row.total span:last-child').textContent = `$${data.grand_total}`;
-                            
-                            // Check if cart is empty
-                            if (document.querySelector('.cart-table tbody').children.length === 0) {
-                                location.reload(); // Reload to show empty cart message
-                            }
-                            
-                            showMessage(data.message || 'Item removed successfully');
-                        }, 300);
-                    } else {
-                        showMessage(data.message || 'Error removing item', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showMessage('Error removing item', 'danger');
-                });
+// Handle item removal via AJAX
+function handleRemoveItem(cartItemId) {
+    if (confirm('Are you sure you want to remove this item from your cart?')) {
+        fetch(`/cart/remove_cart_item/${cartItemId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
             }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Get the cart item row
+                const cartItemRow = document.querySelector(`tr[data-cart-item="${cartItemId}"]`);
+                cartItemRow.style.transition = 'all 0.3s ease';
+                cartItemRow.style.opacity = '0';
+                
+                setTimeout(() => {
+                    cartItemRow.remove();
+                    
+                    // Update totals
+                    updateCartTotals(data);
+                    
+                    // Check if cart is empty
+                    if (document.querySelector('.cart-table tbody').children.length === 0) {
+                        location.reload(); // Reload to show empty cart message
+                    }
+                    
+                    showMessage(data.message || 'Item removed successfully');
+                }, 300);
+            } else {
+                showMessage(data.message || 'Error removing item', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error removing item', 'danger');
+        });
+    }
+}
+
+// Set up event listeners when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up event handlers for increase buttons
+    const increaseButtons = document.querySelectorAll('.increase-btn');
+    increaseButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const cartItemId = this.getAttribute('data-cart-item');
+            handleQuantityChange(cartItemId, 'increase');
+        });
+    });
+    
+    // Set up event handlers for decrease buttons
+    const decreaseButtons = document.querySelectorAll('.decrease-btn');
+    decreaseButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const cartItemId = this.getAttribute('data-cart-item');
+            handleQuantityChange(cartItemId, 'decrease');
+        });
+    });
+    
+    // Set up event handlers for quantity inputs
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const cartItemId = this.getAttribute('data-cart-item');
+            handleQuantityChange(cartItemId, 'set', this.value);
+        });
+    });
+    
+    // Set up event handlers for remove buttons
+    const removeButtons = document.querySelectorAll('.remove-btn');
+    removeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const cartItemId = this.getAttribute('data-cart-item');
+            handleRemoveItem(cartItemId);
         });
     });
 });
