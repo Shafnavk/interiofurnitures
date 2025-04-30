@@ -145,130 +145,31 @@
                                     </td>
                                     <td class="py-3">${{ item.product_price }}</td>
                                     <td class="py-3">{{ item.quantity }}</td>
-                                    <td class="py-3 text-end">${{ item.subtotal }}</td>
+                                    <td class="py-3 text-end"><td>${{ item.product_price|multiply:item.quantity }}</td></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td>Rs. {{ order.order_total|subtract:order.tax }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Tax (2%):</strong></td>
+                                    <td>Rs. {{ order.tax }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
+                                    <td><strong>Rs. {{ order.order_total }}</strong></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
-                    <div class="card-footer bg-white">
-                        <div class="row justify-content-end">
-                            <div class="col-md-5">
-                                <div class="border-top pt-3">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Subtotal:</span>
-                                        <span>${{ order.order_total }}</span>
-                                    </div>
-                                    {% if order.tax_amount %}
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Tax:</span>
-                                        <span>${{ order.tax_amount }}</span>
-                                    </div>
-                                    {% endif %}
-                                    {% if order.shipping_cost %}
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Shipping:</span>
-                                        <span>${{ order.shipping_cost }}</span>
-                                    </div>
-                                    {% endif %}
-                                    {% if order.coupon_discount %}
-                                    <div class="d-flex justify-content-between mb-2 text-success">
-                                        <span>Discount:</span>
-                                        <span>-${{ order.coupon_discount }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="d-flex justify-content-between mt-2 pt-2 border-top">
-                                        <span class="fw-bold fs-5">Grand Total:</span>
-                                        <span class="fw-bold fs-5">${{ order.order_total }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
             
-            <!-- Order Timeline Card -->
-            <div class="card mb-4 border-0 shadow-sm">
-                <div class="card-header bg-light py-3">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Order Timeline</h5>
-                </div>
-                <div class="card-body">
-                    <div class="timeline">
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Order Placed</h6>
-                                <p class="mb-0">Customer placed the order</p>
-                                <p class="timeline-date">{{ order.created_at|date:"M d, Y h:i A" }}</p>
-                            </div>
-                        </div>
-                        
-                        {% if order.status != 'New' %}
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Processing Started</h6>
-                                <p class="mb-0">Order confirmed and processing</p>
-                                <p class="timeline-date">{{ order.updated_at|date:"M d, Y h:i A" }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if order.status == 'Shipped' or order.status == 'Delivered' %}
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Order Shipped</h6>
-                                <p class="mb-0">Package sent for delivery</p>
-                                <p class="timeline-date">{{ order.updated_at|date:"M d, Y h:i A" }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if order.status == 'Delivered' %}
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Order Delivered</h6>
-                                <p class="mb-0">Package delivered successfully</p>
-                                <p class="timeline-date">{{ order.updated_at|date:"M d, Y h:i A" }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if order.status == 'Cancelled' %}
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Order Cancelled</h6>
-                                <p class="mb-0">Order has been cancelled</p>
-                                <p class="timeline-date">{{ order.updated_at|date:"M d, Y h:i A" }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if order.refund_status %}
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Refund {{ order.refund_status }}</h6>
-                                <p class="mb-0">
-                                    {% if order.refund_status == 'Pending' %}
-                                    Refund request is being reviewed
-                                    {% elif order.refund_status == 'Completed' %}
-                                    Refund has been processed successfully
-                                    {% elif order.refund_status == 'Rejected' %}
-                                    Refund request was rejected
-                                    {% endif %}
-                                </p>
-                                <p class="timeline-date">{{ order.refunded_at|default:order.updated_at|date:"M d, Y h:i A" }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+            
         </div>
         
         <!-- Right Column - Order Management -->
